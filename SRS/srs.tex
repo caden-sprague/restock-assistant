@@ -121,11 +121,78 @@ This document is organized using the outline formate laid out by IEEE. It contai
 
 \section{Restocking Session Initialization -- TODO}
 
-\section{Voice and Text Command Input -- TODO}
+\section{Voice and Text Command Input -- JOEL}
+The system accepts restock commands from the stocker as either spoken 
+voice input or typed text. Voice input is converted to text by the 
+mobile device before being sent to the backend. A valid command 
+consists of a product name and a target quantity, for example 
+``set Fairlife to 5.'' The backend parses the command string and 
+extracts these two values. If the command cannot be parsed into a 
+recognizable product name and quantity, the system returns an error 
+message to the app. The system shall return a result within 3 seconds 
+of receiving a command.
 
-\section{Product Name Matching -- TODO}
+\textbf{Priority:} Essential
 
-\section{Product Disambiguation -- TODO}
+\textbf{Functional Requirements:}
+\begin{itemize}
+    \item R2.1 The system shall accept restock commands as typed text input.
+    \item R2.2 The system shall accept restock commands as spoken voice 
+    input converted to text by the mobile device.
+    \item R2.3 The system shall parse a valid command into a product name 
+    and a non-negative integer quantity.
+    \item R2.4 The system shall return an invalid command error to the app 
+    if the input cannot be parsed.
+    \item R2.5 The system shall return a result to the app within 3 seconds 
+    of receiving a command.
+\end{itemize}
+
+\section{Product Name Matching -- JOEL}
+At the start of each restocking session the backend builds a searchable 
+product index from the machine's planogram. When a command is received, 
+the system searches the index for the closest matching product using 
+fuzzy name matching to account for spelling variations and abbreviations. 
+The system returns one of three results: a single matched product with 
+its Micromart inventory identifier, a list of candidates if multiple 
+products match, or a not found result if no match exists.
+
+\textbf{Priority:} Essential
+
+\textbf{Functional Requirements:}
+\begin{itemize}
+    \item R3.1 The system shall build a searchable product index from the 
+    planogram at the start of each restocking session.
+    \item R3.2 The system shall use fuzzy string matching to compare parsed 
+    product names against the index.
+    \item R3.3 The system shall return a matched product and its Micromart 
+    inventory identifier when exactly one match is found.
+    \item R3.4 The system shall return a list of candidates when a command 
+    matches more than one product.
+    \item R3.5 The system shall return a not found result when no product 
+    in the index matches the parsed name.
+\end{itemize}
+
+\section{Product Disambiguation -- JOEL}
+When a restock command matches more than one product in the planogram 
+index, the system sends the list of candidates to the mobile app and 
+waits for the stocker to select the correct item before submitting any 
+update. The system shall not submit a restock correction event until a 
+single product has been confirmed. The stocker may also cancel the 
+command entirely, in which case no update is submitted.
+
+\textbf{Priority:} Essential
+
+\textbf{Functional Requirements:}
+\begin{itemize}
+    \item R4.1 The system shall send all matching candidate products to 
+    the app when a command is ambiguous.
+    \item R4.2 The system shall not submit a restock correction event until 
+    the stocker selects a single product from the candidates.
+    \item R4.3 The system shall allow the stocker to cancel a disambiguation 
+    prompt without submitting any update.
+    \item R4.4 The system shall use the originally parsed quantity when 
+    submitting after a product has been selected.
+\end{itemize}
 
 \section{Restock Correction Submission -- TODO}
 
