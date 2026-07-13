@@ -1,0 +1,149 @@
+\documentclass{scrreprt}
+\usepackage{listings}
+\usepackage{underscore}
+\usepackage{graphicx}
+\usepackage[bookmarks=true]{hyperref}
+\usepackage[utf8]{inputenc}
+\usepackage[english]{babel}
+\hypersetup{
+    bookmarks=false,    % show bookmarks bar?
+    pdftitle={Software Requirement Specification},    % title
+    pdfauthor={Jean-Philippe Eisenbarth},                     % author
+    pdfsubject={TeX and LaTeX},                        % subject of the document
+    pdfkeywords={TeX, LaTeX, graphics, images}, % list of keywords
+    colorlinks=true,       % false: boxed links; true: colored links
+    linkcolor=blue,       % color of internal links
+    citecolor=black,       % color of links to bibliography
+    filecolor=black,        % color of file links
+    urlcolor=purple,        % color of external links
+    linktoc=page            % only page is linked
+}%
+\def\myversion{1.0 }
+\date{}
+%\title{%
+
+%}
+\usepackage{hyperref}
+\begin{document}
+
+\begin{flushright}
+    \rule{16cm}{5pt}\vskip1cm
+    \begin{bfseries}
+        \Huge{SOFTWARE REQUIREMENTS\\ SPECIFICATION}\\
+        \vspace{1.5cm}
+        for\\
+        \vspace{1.5cm}
+        Vending Machine Restocking Assistant\\
+        \vspace{1.5cm}
+        \LARGE{Version \myversion}\\
+        \vspace{1.5cm}
+        Prepared by:\\
+        Joel Sarmiento\\
+        Devin Schupbach\\
+        Caden Sprauge\\
+        \vspace{1.5cm}
+        July 16, 2026\\
+    \end{bfseries}
+\end{flushright}
+
+\tableofcontents
+
+\chapter{Introduction}
+
+\section{Purpose -- JOEL}
+The purpose of this Software Requirements Specification is to define the functional and non-functional requirements for the Vending Machine Restocking Assistant, a mobile-first application and supporting backend service designed to streamline the Micromart restocking process. This document describes what the system shall do, the constraints under which it must operate, and the quality attributes it must satisfy.
+
+\section{Intended Audience -- JOEL}
+This document is intended for the development team, who will use it as the primary reference for design, implementation, and testing; representatives of the vending machine stocking company, who may use it to verify that the proposed system aligns with their operational needs; and testers, who will use the functional and non-functional requirements to verify system behavior.
+
+\section{Product Scope -- JOEL}
+The Vending Machine Restocking Assistant is a mobile application and backend service that allows vending machine stockers to update Micromart inventory using simple spoken or typed commands. The system has the following functions:
+\begin{itemize}
+    \item Load the active site and restocking session information at the start of a session
+    \item Fetch and index the machine's planogram from Micromart
+    \item Accept spoken or typed restock commands from the stocker
+    \item Match product names in commands to Micromart inventory records
+    \item Prompt the stocker to clarify when a command matches multiple products
+    \item Submit restock correction events to the Micromart system
+    \item Display success or failure feedback to the stocker
+    \item Log all attempted updates for debugging purposes
+\end{itemize}
+
+\section{Definitions, Acronyms, and Abbreviations -- JOEL}
+\begin{tabular}{|p{4cm}|p{10cm}|}
+\hline
+\textbf{Term} & \textbf{Definition} \\
+\hline
+Stocker & A field employee responsible for physically restocking a vending machine \\
+\hline
+Planogram & A schematic provided by Micromart that defines the products and slots in a vending machine \\
+\hline
+Restock event & An API action submitted to Micromart that updates the recorded inventory quantity for a product \\
+\hline
+Session cookie & An authentication token used to authorize requests to the Micromart system \\
+\hline
+Micromart & The third-party vending machine management platform used by the stocking company \\
+\hline
+API & Application Programming Interface \\
+\hline
+Backend & The server-side service responsible for command parsing, product matching, and Micromart communication \\
+\hline
+\end{tabular}
+
+\section{References -- JOEL}
+\begin{tabular}{|p{4cm}|p{10cm}|}
+\hline
+\textbf{Reference} & \textbf{Source} \\
+\hline
+IEEE Std 830-1998 & IEEE Recommended Practice for Software Requirements Specifications \\
+\hline
+Micromart API & Internal Micromart web platform used for inventory management \\
+\hline
+\end{tabular}
+\section{Overview -- JOEL}
+This document is organized using the outline formate laid out by IEEE. It contains overall description of the system, functional requirements, non-functional requirements, and design constraints.
+
+\chapter{Overall Description}
+
+\section{Product Perspective -- TODO}
+
+\section{User Classes and Characteristics -- TODO}
+
+\section{Product Functions -- TODO}
+
+\section{Operating Environment -- TODO}
+
+\section{Design and Implementation Constraints -- TODO}
+
+\section{Assumptions and Dependencies -- TODO}
+
+\chapter{System Features}
+
+\section{Restocking Session Initialization -- TODO}
+
+\section{Voice and Text Command Input -- TODO}
+
+\section{Product Name Matching -- TODO}
+
+\section{Product Disambiguation -- TODO}
+
+\section{Restock Correction Submission -- TODO}
+
+\section{Update Result Display -- TODO}
+
+\section{Update Logging -- TODO}
+
+
+\chapter{Other Nonfunctional Requirements}
+
+\section{Performance Requirements -- TODO}
+
+\section{Security Requirements -- TODO}
+
+\section{Software Quality Attributes -- TODO}
+
+\section{Business Rules -- TODO}
+
+\chapter{Other Requirements}
+
+\end{document}
