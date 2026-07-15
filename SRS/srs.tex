@@ -233,21 +233,67 @@ Once a restock command has resolved to a single matched product, whether directl
     \item R5.3 The system shall report to the app whether the submitted restock correction event succeeded or failed.
 \end{itemize}
 
-\section{Update Result Display -- TODO}
+\section{Update Result Display -- DEVIN}
+Once a restock correction event has been submitted to Micromart, or once the system has determined that a command could not be completed, the mobile app must clearly communicate the outcome to the stocker so they can move on to the next item with confidence. The app displays a simple success message identifying the product and new quantity when a restock correction event succeeds, and a clear failure message when it does not, along with enough detail (e.g. invalid command, product not found, Micromart API error) for the stocker to understand what went wrong and retry if needed.
 
-\section{Update Logging -- TODO}
+\textbf{Priority:} Essential
 
+\textbf{Functional Requirements:}
+\begin{itemize}
+    \item R6.1 The system shall display a success message to the stocker, including the matched product and submitted quantity, when a restock correction event succeeds.
+    \item R6.2 The system shall display a failure message to the stocker when a restock correction event fails or cannot be submitted.
+    \item R6.3 The system shall distinguish between failure types shown to the stocker, including invalid command, product not found, and Micromart API error.
+    \item R6.4 The system shall allow the stocker to immediately issue a new command after a result is displayed, without requiring the app to be restarted.
+\end{itemize}
+
+\section{Update Logging -- DEVIN}
+For debugging and safety, the backend records every restock command it attempts to process, regardless of whether the command ultimately succeeds, fails, or is canceled by the stocker during disambiguation. Each log entry captures enough information to reconstruct what happened, including the raw input command, the parsed product name and quantity, the matched Micromart inventory identifier (if any), and the final outcome of the attempt. These logs allow the development team and the stocking company to diagnose issues after the fact without needing to reproduce them live in the field.
+
+\textbf{Priority:} High
+
+\textbf{Functional Requirements:}
+\begin{itemize}
+    \item R7.1 The system shall log every received restock command, including the raw input text and the active restocking session.
+    \item R7.2 The system shall log the parsed product name and quantity extracted from each command.
+    \item R7.3 The system shall log the outcome of each attempted update, including success, failure, invalid command, not found, or stocker-canceled disambiguation.
+    \item R7.4 The system shall log the Micromart inventory identifier associated with a matched product when one is found.
+    \item R7.5 The system shall retain logs in a form accessible to the development team for debugging purposes.
+\end{itemize}
 
 \chapter{Other Nonfunctional Requirements}
 
-\section{Performance Requirements -- TODO}
+\section{Performance Requirements -- DEVIN}
+Because the system is used by a stocker actively standing in front of a vending machine, responsiveness is critical to the product's value proposition of being faster than the existing Micromart website.
 
-\section{Security Requirements -- TODO}
+\begin{itemize}
+    \item NFR1.1 The system shall return a result to the app within 3 seconds of receiving a parsed restock command, consistent with R2.5.
+    \item NFR1.2 The system shall complete planogram fetching and index building within 10 seconds at the start of a restocking session.
+    \item NFR1.3 The system shall support at least one active restocking session without degradation in response time, consistent with the single-user MVP scope.
+\end{itemize}
 
-\section{Software Quality Attributes -- TODO}
+\section{Security Requirements -- DEVIN}
+Although the MVP simplifies authentication, the system must still handle credentials and inventory-affecting actions responsibly.
 
-\section{Business Rules -- TODO}
+\begin{itemize}
+    \item NFR2.1 The system shall store the manually supplied Micromart session cookie securely and shall not expose it to the mobile app beyond what is required to authenticate backend requests.
+    \item NFR2.2 The system shall be designed so that the manual session cookie authentication can be replaced with a full Micromart login and two-factor authentication flow without redesigning the backend's core command-processing logic.
+    \item NFR2.3 The system shall only submit restock correction events to Micromart on behalf of an authenticated, active restocking session.
+    \item NFR2.4 The system shall not log the raw session cookie or other authentication credentials in the update logs described in Section 3.7.
+\end{itemize}
 
-\chapter{Other Requirements}
+\section{Software Quality Attributes -- DEVIN}
+\begin{itemize}
+    \item \textbf{Usability:} The system shall allow a stocker to issue a restock command and receive a result using only voice or short typed input, without navigating menus, so that it is faster than the existing Micromart website.
+    \item \textbf{Reliability:} The system shall correctly report failures rather than silently discarding commands, and shall never submit a restock correction event for an unconfirmed or ambiguous product match.
+    \item \textbf{Maintainability:} The system shall separate mobile app responsibilities (input capture, result display, disambiguation) from backend responsibilities (parsing, matching, Micromart communication) so that each can be modified independently.
+    \item \textbf{Extensibility:} The system shall be structured so that support for additional vending machine platforms, such as 365, or a full login and two-factor authentication flow, can be added without a full redesign.
+\end{itemize}
 
+\section{Business Rules -- DEVIN}
+\begin{itemize}
+    \item BR1 The system shall support only one user and one active restocking session at a time in the initial version.
+    \item BR2 The system shall not submit a restock correction event to Micromart until a command has resolved to exactly one matched product and quantity, per R4.2 and R5.1.
+    \item BR3 The project team is not responsible for building or modifying the Micromart platform, the vending machine hardware, or the stocking company's existing website.
+    \item BR4 The system shall focus on Micromart restocking first, with support for additional platforms, such as 365, considered out of scope for the initial version.
+\end{itemize}
 \end{document}
