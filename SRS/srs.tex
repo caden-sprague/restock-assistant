@@ -40,7 +40,7 @@
         Prepared by:\\
         Joel Sarmiento\\
         Devin Schupbach\\
-        Caden Sprauge\\
+        Caden Sprague\\
         \vspace{1.5cm}
         July 16, 2026\\
     \end{bfseries}
@@ -105,21 +105,48 @@ This document is organized using the outline formate laid out by IEEE. It contai
 
 \chapter{Overall Description}
 
-\section{Product Perspective -- TODO}
+\section{Product Perspective -- CADEN}
+The Vending Machine Restocking Assistant is a new system consisting of a mobile-first app and a backend service. It is not a standalone product but an intermediary that interacts with the existing, third-party Micromart platform: the backend communicates with Micromart to fetch planogram data and submit restock correction events on the stocker's behalf. The project team is not responsible for building or modifying the Micromart platform itself, the vending machine hardware, or the company's existing website. The stocking company currently stocks more than one type of vending machine system, including 365 and Micromart machines, but this system will focus first on Micromart restocking.
 
-\section{User Classes and Characteristics -- TODO}
+\section{User Classes and Characteristics -- CADEN}
+The primary user class is the stocker, a field employee who physically restocks vending machines and needs a faster way to update inventory than interacting with the existing Micromart website. For the initial version, the system will support one user and one active restocking session at a time.
 
-\section{Product Functions -- TODO}
+\section{Product Functions -- CADEN}
+The system will support the following high-level functions:
+\begin{itemize}
+    \item Load the active site and restock session information at the beginning of a restocking session
+    \item Fetch the machine's planogram from Micromart and build a searchable inventory index from it
+    \item Receive spoken or typed restock commands from the stocker, such as ``set Fairlife to 5''
+    \item Parse restock commands and match product names to Micromart inventory records
+    \item Prompt the stocker to choose the correct item when a command matches more than one product
+    \item Handle unclear or invalid commands
+    \item Submit restock correction events to the Micromart system
+    \item Show the stocker whether an update succeeded or failed
+    \item Log attempted updates for debugging and safety
+\end{itemize}
 
-\section{Operating Environment -- TODO}
+\section{Operating Environment -- CADEN}
+The system consists of a mobile app used by the stocker in the field and a backend service that communicates with the Micromart system. The mobile app is responsible for capturing user input, displaying results, and handling product clarification when needed. The backend is responsible for Micromart communication, product matching logic, command parsing, API error handling, and restock event submission.
 
-\section{Design and Implementation Constraints -- TODO}
+\section{Design and Implementation Constraints -- CADEN}
+For the initial version, the system will support only one user and one active restocking session at a time. Authentication with Micromart will be simplified for the project MVP by using a manually supplied session cookie, but the backend will be designed so that a real login and two-factor authentication flow could be added later. The project team is not responsible for building or modifying the Micromart platform itself, the vending machine hardware, or the company's existing website.
 
-\section{Assumptions and Dependencies -- TODO}
+\section{Assumptions and Dependencies -- CADEN}
+The system assumes a valid, manually supplied Micromart session cookie is available for authentication in the MVP, rather than a full login and two-factor authentication flow. The system depends on the Micromart platform for planogram data and for accepting submitted restock correction events, and the backend's ability to match products and submit updates depends on the accuracy of the planogram fetched at the start of each session.
 
 \chapter{System Features}
 
-\section{Restocking Session Initialization -- TODO}
+\section{Restocking Session Initialization -- CADEN}
+At the beginning of a restocking session, the system loads the active site and restock session information. The backend then fetches the active machine's planogram from Micromart and builds a searchable inventory index from it, so that product names given in later commands can be matched against the actual products in the machine.
+
+\textbf{Priority:} Essential
+
+\textbf{Functional Requirements:}
+\begin{itemize}
+    \item R1.1 The system shall load the active site and restock session information at the start of a restocking session.
+    \item R1.2 The system shall fetch the active machine's planogram from Micromart at the start of a restocking session.
+    \item R1.3 The system shall build a searchable inventory index from the fetched planogram before accepting restock commands.
+\end{itemize}
 
 \section{Voice and Text Command Input -- JOEL}
 The system accepts restock commands from the stocker as either spoken 
@@ -194,7 +221,17 @@ command entirely, in which case no update is submitted.
     submitting after a product has been selected.
 \end{itemize}
 
-\section{Restock Correction Submission -- TODO}
+\section{Restock Correction Submission -- CADEN}
+Once a restock command has resolved to a single matched product, whether directly or after the stocker resolves a disambiguation prompt, the backend submits the corresponding restock correction event to the Micromart system. The app then shows the stocker whether the update succeeded or failed.
+
+\textbf{Priority:} Essential
+
+\textbf{Functional Requirements:}
+\begin{itemize}
+    \item R5.1 The system shall submit a restock correction event to Micromart once a command has resolved to a single matched product and quantity.
+    \item R5.2 The system shall use the Micromart inventory identifier of the matched product when submitting the restock correction event.
+    \item R5.3 The system shall report to the app whether the submitted restock correction event succeeded or failed.
+\end{itemize}
 
 \section{Update Result Display -- TODO}
 
