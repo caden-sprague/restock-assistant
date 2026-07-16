@@ -1,0 +1,17 @@
+﻿CS4398 Project Proposal - Software for Voice-Assisted Vending Machine Restocking
+By: Caden Sprauge, Devin Schupbach, Joel Sarmiento
+
+
+A vending machine stocking company is looking for a faster way for its stockers to update inventory while restocking machines in the field. The company currently stocks more than one type of vending machine system, including 365 and Micromart machines, but this project will focus first on Micromart restocking. The goal of the system is to reduce the amount of time a stocker spends interacting with the existing Micromart website while physically stocking products.
+
+
+The proposed software will be a mobile-first restocking assistant that allows a stocker to give simple spoken or typed commands such as “set Fairlife to 5.” The mobile app will send the command to a backend service, which will interpret the request, identify the intended product from the active machine’s planogram, find the correct Micromart inventory identifier, and submit the corresponding restock correction event to the Micromart system. The app will then show the stocker whether the update succeeded or failed.
+
+
+At the beginning of a restocking session, the system will load the active site and restock session information and fetch the machine’s planogram from Micromart. The backend will build a searchable inventory index from that planogram so that product names can be matched against the actual products in the machine. If the stocker gives a command that matches more than one product, such as “set Fairlife to 5” when multiple Fairlife products exist, the app will ask the stocker to choose the correct item before submitting the update.
+
+
+The system will be responsible for receiving stocker input from the mobile app, parsing restock commands, matching product names to Micromart inventory records, handling unclear or invalid commands, submitting restock correction events, and logging attempted updates for debugging and safety. The mobile app will be responsible for capturing user input, displaying results, and handling product clarification when needed. The backend will be responsible for Micromart communication, product matching logic, command parsing, API error handling, and restock event submission.
+
+
+For the initial version, the system will support one user and one active restocking session at a time. Authentication with Micromart will be simplified for the project MVP by using a manually supplied session cookie, but the backend will be designed so that a real login and two-factor authentication flow could be added later. The project team is not responsible for building or modifying the Micromart platform itself, the vending machine hardware, or the company’s existing website. The team is responsible for building the mobile assistant and backend service that help the stocker interact with Micromart more efficiently.
