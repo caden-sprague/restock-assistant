@@ -1,0 +1,80 @@
+I am building a real MVP for a mobile restocking assistant for Micromart vending/restock workflows. The app is not just a school-only prototype, but it will also be submitted for a software engineering class where the professor wants to see scale and architecture.
+
+The core workflow is:
+
+1. A restocker manually starts a restock session at a kiosk.
+2. For the MVP, assume we manually obtain and hardcode the needed Micromart auth cookie/session, `site_id`, and `restock_session_id`.
+3. The backend uses the hardcoded auth/session to request the Micromart planogram:
+   `GET https://classic.micromart.com/api/sites/{site_id}/planogram`
+4. From the planogram, extract products from `cells[].site_inventory`, especially:
+
+   * `site_inventory.id`
+   * `site_inventory.inventory.recipe.name`
+   * quantity and any useful metadata
+5. The mobile app lets the restocker enter commands like:
+
+   * “set fairlife to 5”
+   * “fairlife 5”
+   * “correct fairlife 5”
+6. The backend parses the command, resolves the product name against the planogram, finds the correct `site_inventory_id`, and posts a restock correction event:
+   `POST https://classic.micromart.com/api/restocks/{restock_session_id}/events`
+   with a payload like:
+   `{ "type": "correct", "quantity": 5, "site_inventory_id": 294450 }`
+7. If the product name is ambiguous, such as multiple Fairlife products, the backend should return a clarification response like “Which item did you mean?” and the mobile app should show the options.
+8. The app loops until the restocker is done.
+
+Use this stack:
+
+* Frontend: React Native / Expo / TypeScript
+* Backend: Node.js / TypeScript using Express or Fastify
+* External API: Micromart REST endpoints
+* Auth for MVP: hardcoded cookie/session through environment variables
+* User model for MVP: single user, one active restock session
+
+Important architecture decisions:
+
+* The mobile app should stay thin.
+* The mobile app should only talk to our backend, not directly to Micromart.
+* The backend owns Micromart auth, planogram fetching, command parsing, product resolution, restock event submission, validation, error handling, and logging.
+* Abstract auth behind an `AuthProvider` so the hardcoded cookie can later be replaced with real username/password login and possibly 2FA.
+* Keep Micromart-specific endpoints inside a `MicromartClient`.
+* Keep the product matching logic in a separate `InventoryResolver` or “Command + Inventory Resolver Service.”
+* Do not reduce the planogram to only `{ name: siteId }`; keep a richer inventory model with `siteInventoryId`, display name, normalized name, aliases, recipe ID, cell position, and other useful fields.
+* The product resolver should support exact matches, aliases, contains/includes matches, fuzzy matching, ambiguous-match detection, and not-found responses.
+* Add audit logging for attempted corrections.
+* Include error handling for expired auth, failed planogram fetch, invalid command, invalid quantity, product not found, ambiguous product, failed Micromart POST, and missing session.
+
+Please generate a detailed Markdown MVP plan that includes:
+
+1. Project summary
+2. MVP assumptions
+3. High-level architecture diagram
+4. End-to-end data flow
+5. Tech stack and rationale
+6. Frontend responsibilities
+7. Backend responsibilities
+8. Suggested backend folder structure
+9. Suggested frontend folder structure
+10. Environment variable configuration
+11. Auth abstraction design
+12. Micromart client design
+13. Inventory data model
+14. Command parsing strategy
+15. Product matching strategy
+16. Backend API contract
+17. Restock event service behavior
+18. Error handling
+19. Audit logging
+20. Frontend app flow
+21. MVP milestones
+22. Future enhancements
+23. Key architecture principle
+24. Recommended build order
+
+Also include a suggested 3-person work split:
+
+* Person 1: Backend / Micromart Integration
+* Person 2: Mobile App / Frontend
+* Person 3: Command + Inventory Resolver Service
+
+Keep the tone practical and implementation-focused. Assume we want to build a working MVP, not just describe a theoretical school project.
