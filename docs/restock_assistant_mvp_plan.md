@@ -157,7 +157,7 @@ TypeScript
 ```text
 Node.js
 TypeScript
-Express or Fastify
+Fastify
 Axios or native fetch
 dotenv
 ```
@@ -170,13 +170,11 @@ dotenv
 - Fast to build and refactor.
 - Easy to integrate validation, logging, and service-layer structure.
 
-Recommended backend framework:
-
-```text
-Fastify or Express
-```
-
-Either is fine. Fastify has strong TypeScript ergonomics and good performance. Express is simpler and more familiar.
+Backend framework: **Fastify** (chosen). Fastify has strong TypeScript
+ergonomics and good performance; Express was the alternative. The framework is
+isolated to the composition root (`app.ts`) and the route adapters
+(`routes/*.ts`) — controllers and services stay framework-agnostic, so the
+choice does not leak into business logic.
 
 ---
 
@@ -1081,7 +1079,7 @@ Recommended final MVP stack:
 
 ```text
 Mobile: React Native / Expo / TypeScript
-Backend: Node.js / TypeScript / Fastify or Express
+Backend: Node.js / TypeScript / Fastify
 Config: dotenv
 External API client: fetch or Axios
 Initial storage: in-memory

@@ -3,16 +3,23 @@
  * Owner: Caden (backend / Micromart integration)
  * Plan: §15 POST /session/start
  *
- * Wires the HTTP framework (Express or Fastify — §5, undecided) to
- * SessionController. `app` is typed `unknown` until the framework is chosen.
+ * Wires Fastify (§5) to SessionController. The controller is framework-agnostic
+ * (takes a parsed input, returns a typed response); this file is the adapter.
  */
 
+import type { FastifyInstance } from "fastify";
 import type { SessionController } from "../controllers/sessionController";
+import { httpStatusFor } from "./httpStatus";
 
 export function registerSessionRoutes(
-    _app: unknown,
-    _controller: SessionController,
+    app: FastifyInstance,
+    controller: SessionController,
 ): void {
-    // TODO(Caden): POST /session/start -> controller.startSession(req.body)
-    throw new Error("Not implemented: registerSessionRoutes");
+    app.post<{ Body: { siteId?: string; restockSessionId?: string } }>(
+        "/session/start",
+        async (req, reply) => {
+            const body = await controller.startSession(req.body ?? {});
+            return reply.code(httpStatusFor(body)).send(body);
+        },
+    );
 }

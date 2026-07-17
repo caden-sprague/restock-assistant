@@ -54,14 +54,17 @@ Backend responses always carry a `status` of `success` | `error` | `needs_confir
 Run from the `backend/` directory:
 
 ```bash
-npm install          # install dev deps (TypeScript, @types/node)
+npm install          # install deps (Fastify) + dev deps (TypeScript, @types/node)
 npm run typecheck    # tsc --noEmit — the current gate; must stay green
 npm run build        # tsc -> dist/
+npm start            # node --env-file=../.env dist/server.js  (needs a built dist/ + .env)
+npm run dev          # build, then start
 ```
 
-There is no lint/test/run yet — a web framework (Express or Fastify, plan §5) is
-undecided, so routes are framework-agnostic stubs. Add lint/test/`dev`/`start`
-scripts here as they land, and keep `npm run typecheck` passing on every commit.
+The web framework is **Fastify** (plan §5). It is isolated to the composition
+root (`src/app.ts`) and the route adapters (`src/routes/*.ts`); controllers and
+services stay framework-agnostic. There is no lint/test yet — add those scripts
+as they land, and keep `npm run typecheck` passing on every commit.
 
 ### Other
 

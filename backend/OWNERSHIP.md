@@ -32,5 +32,6 @@ Per [`../CLAUDE.md`](../CLAUDE.md) and the MVP plan §8. Devin owns the mobile a
 | `src/utils/fuzzyMatch.ts` | Joel | §14 |
 | `src/utils/logger.ts` | Caden | §7 |
 
-> Controllers/routes are wired to a framework (Express or Fastify — plan §5, undecided).
-> Stubs are framework-agnostic so that choice stays open.
+> Controllers/services are framework-agnostic. The framework is **Fastify**
+> (plan §5), isolated to the composition root (`app.ts`) and the route adapters
+> (`routes/*.ts`).

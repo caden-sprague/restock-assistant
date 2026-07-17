@@ -14,12 +14,29 @@ export type Env = {
     defaultRestockSessionId: string;
 };
 
+function requireEnv(name: string): string {
+    const value = process.env[name];
+    if (value === undefined || value.trim() === "") {
+        throw new Error(`Missing required environment variable: ${name}`);
+    }
+    return value;
+}
+
 /**
- * Read + validate environment variables. Throw early (fail-fast on boot) if a
- * required value is missing.
- *
- * TODO(Caden): load dotenv, validate presence, coerce PORT to number.
+ * Read + validate environment variables. Throws early (fail-fast on boot) if a
+ * required value is missing. Values are loaded into process.env by Node's
+ * --env-file flag (see the `start`/`dev` scripts) — no dotenv dependency.
  */
 export function loadEnv(): Env {
-    throw new Error("Not implemented: config/env.loadEnv");
+    const port = Number(process.env.PORT ?? "3000");
+    if (!Number.isInteger(port) || port <= 0) {
+        throw new Error(`Invalid PORT: ${process.env.PORT ?? "(unset)"}`);
+    }
+    return {
+        port,
+        micromartBaseUrl: requireEnv("MICROMART_BASE_URL"),
+        micromartCookie: requireEnv("MICROMART_COOKIE"),
+        defaultSiteId: requireEnv("DEFAULT_SITE_ID"),
+        defaultRestockSessionId: requireEnv("DEFAULT_RESTOCK_SESSION_ID"),
+    };
 }

@@ -5,10 +5,15 @@
   "description": "Backend for the Restock Assistant MVP. Stubs only — see docs/restock_assistant_mvp_plan.md.",
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "typecheck": "tsc -p tsconfig.json --noEmit"
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "start": "node --env-file=../.env dist/server.js",
+    "dev": "npm run build && npm start"
   },
   "devDependencies": {
     "@types/node": "^20.11.0",
     "typescript": "^5.4.0"
+  },
+  "dependencies": {
+    "fastify": "^5.10.0"
   }
 }

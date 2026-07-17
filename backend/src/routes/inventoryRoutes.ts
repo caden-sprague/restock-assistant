@@ -4,12 +4,19 @@
  * Plan: §15 GET /inventory/search
  */
 
+import type { FastifyInstance } from "fastify";
 import type { InventoryController } from "../controllers/inventoryController";
+import { httpStatusFor } from "./httpStatus";
 
 export function registerInventoryRoutes(
-    _app: unknown,
-    _controller: InventoryController,
+    app: FastifyInstance,
+    controller: InventoryController,
 ): void {
-    // TODO(Joel): GET /inventory/search?q=... -> controller.search(req.query.q)
-    throw new Error("Not implemented: registerInventoryRoutes");
+    app.get<{ Querystring: { q?: string } }>(
+        "/inventory/search",
+        async (req, reply) => {
+            const body = await controller.search(req.query.q ?? "");
+            return reply.code(httpStatusFor(body)).send(body);
+        },
+    );
 }
