@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Current State
 
-This repo is **pre-implementation**. It currently contains only planning and specification documents — there is no application code, no `package.json`, and no build/test tooling yet. When development starts, the `backend/` and `mobile/` folders described below get created.
+The `backend/` scaffold now exists as **typed stubs** — every module from the MVP plan's folder structure is present with signatures and `Not implemented` bodies (implementations land per the milestones). The `mobile/` app (Devin's, plan §20) is not scaffolded yet. Ownership of each backend file is listed in [`backend/OWNERSHIP.md`](backend/OWNERSHIP.md).
 
 The authoritative design document is [`docs/restock_assistant_mvp_plan.md`](docs/restock_assistant_mvp_plan.md). It specifies the folder structures, data models, API contract, error codes, and build order. **Read it before implementing anything** — it is the source of truth for interfaces and naming.
 
@@ -49,7 +49,21 @@ Backend responses always carry a `status` of `success` | `error` | `needs_confir
 
 ## Tooling
 
-- **SRS document** (`SRS/srs.tex`): a LaTeX Software Requirements Spec. Build with `pdflatex srs.tex` (or `latexmk -pdf srs.tex`) from the `SRS/` directory. Generated PDFs and LaTeX aux files are gitignored.
-- `.env` is gitignored and holds `MICROMART_COOKIE`, `MICROMART_BASE_URL`, `DEFAULT_SITE_ID`, `DEFAULT_RESTOCK_SESSION_ID`, `PORT`.
+### Backend (`backend/`)
 
-Once the backend/mobile scaffolding exists, update this file with the actual build, lint, test, and run commands.
+Run from the `backend/` directory:
+
+```bash
+npm install          # install dev deps (TypeScript, @types/node)
+npm run typecheck    # tsc --noEmit — the current gate; must stay green
+npm run build        # tsc -> dist/
+```
+
+There is no lint/test/run yet — a web framework (Express or Fastify, plan §5) is
+undecided, so routes are framework-agnostic stubs. Add lint/test/`dev`/`start`
+scripts here as they land, and keep `npm run typecheck` passing on every commit.
+
+### Other
+
+- **SRS document** (`SRS/srs.tex`): a LaTeX Software Requirements Spec. Build with `pdflatex srs.tex` (or `latexmk -pdf srs.tex`) from the `SRS/` directory. Generated PDFs and LaTeX aux files are gitignored.
+- `.env` is gitignored and holds `MICROMART_COOKIE`, `MICROMART_BASE_URL`, `DEFAULT_SITE_ID`, `DEFAULT_RESTOCK_SESSION_ID`, `PORT`. Copy [`.env.example`](.env.example) to `.env` and fill in the values.

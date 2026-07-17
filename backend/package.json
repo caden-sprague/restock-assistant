@@ -1,0 +1,14 @@
+{
+  "name": "restock-assistant-backend",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Backend for the Restock Assistant MVP. Stubs only — see docs/restock_assistant_mvp_plan.md.",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "typescript": "^5.4.0"
+  }
+}
