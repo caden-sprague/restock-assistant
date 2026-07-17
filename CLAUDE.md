@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Current State
 
-The `backend/` scaffold now exists as **typed stubs** — every module from the MVP plan's folder structure is present with signatures and `Not implemented` bodies (implementations land per the milestones). The `mobile/` app (Devin's, plan §20) is not scaffolded yet. Ownership of each backend file is listed in [`backend/OWNERSHIP.md`](backend/OWNERSHIP.md).
+The `backend/` scaffold now exists as **typed stubs** — every module from the MVP plan's folder structure is present with signatures and `Not implemented` bodies (implementations land per the milestones). The `frontend/` app (Devin's, plan §20) is not scaffolded yet. Ownership of each backend file is listed in [`backend/OWNERSHIP.md`](backend/OWNERSHIP.md).
 
 The authoritative design document is [`docs/restock_assistant_mvp_plan.md`](docs/restock_assistant_mvp_plan.md). It specifies the folder structures, data models, API contract, error codes, and build order. **Read it before implementing anything** — it is the source of truth for interfaces and naming.
 

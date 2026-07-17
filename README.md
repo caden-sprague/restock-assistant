@@ -100,4 +100,4 @@ restock-assistant/
   SRS/                            # software requirements spec
 ```
 
-Backend (`backend/`) and mobile (`mobile/`) folders will be added as development starts — see the MVP plan for the proposed structure of each.
+Backend (`backend/`) and mobile (`frontend/`) folders will be added as development starts — see the MVP plan for the proposed structure of each.

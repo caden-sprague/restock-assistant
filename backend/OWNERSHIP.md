@@ -1,6 +1,6 @@
 # Backend Ownership
 
-Per [`../CLAUDE.md`](../CLAUDE.md) and the MVP plan §8. Devin owns the mobile app (`mobile/`, plan §20) — not stubbed here.
+Per [`../CLAUDE.md`](../CLAUDE.md) and the MVP plan §8. Devin owns the mobile app (`frontend/`, plan §20) — not stubbed here.
 
 | File | Owner | Plan |
 |------|-------|------|

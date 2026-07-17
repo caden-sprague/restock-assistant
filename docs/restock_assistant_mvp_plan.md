@@ -846,7 +846,7 @@ Backend returns needs_confirmation
 ## 20. Suggested Frontend Folder Structure
 
 ```text
-mobile/
+frontend/
   app/
     App.tsx
 
