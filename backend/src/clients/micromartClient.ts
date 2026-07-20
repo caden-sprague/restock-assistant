@@ -76,9 +76,47 @@ export class MicromartClient {
 
     /** POST /api/restocks/{restockSessionId}/events */
     async postRestockEvent(
-        _restockSessionId: string,
-        _event: RestockEvent,
+        restockSessionId: string,
+        event: RestockEvent,
     ): Promise<void> {
-        throw new Error("Not implemented: MicromartClient.postRestockEvent");
+        const url = `${this.config.baseUrl}${this.config.restockEventsPath(restockSessionId)}`;
+        const headers = {
+            ...(await this.auth.getAuthHeaders()),
+            Accept: "application/json",
+            "Content-Type": "application/json",
+        };
+
+        logger.debug("Posting restock event", { restockSessionId, url, event });
+
+        let response: Response;
+        try {
+            response = await fetch(url, {
+                method: "POST",
+                headers,
+                body: JSON.stringify(event),
+            });
+        } catch (err) {
+            // fetch only rejects on network-level failures (DNS, TCP, TLS).
+            throw new MicromartError(
+                "NETWORK_ERROR",
+                "Could not reach Micromart to submit the restock event.",
+                err,
+            );
+        }
+
+        // Same auth signal as getPlanogram: 401/403 means the cookie is stale.
+        if (response.status === 401 || response.status === 403) {
+            throw new MicromartError(
+                "AUTH_EXPIRED",
+                "Micromart session appears to be expired. Refresh the cookie and restart the backend.",
+            );
+        }
+
+        if (!response.ok) {
+            throw new MicromartError(
+                "MICROMART_POST_FAILED",
+                `Micromart returned ${response.status} submitting the restock event.`,
+            );
+        }
     }
 }

@@ -21,3 +21,20 @@ export class MicromartError extends Error {
         this.name = "MicromartError";
     }
 }
+
+/**
+ * Thrown by SessionService when a command/inventory request arrives before a
+ * restock session is active. Carries the plan's SESSION_NOT_READY code so a
+ * caller can map it straight to an ErrorResponse (§17). Backend-state error —
+ * kept separate from MicromartError (which is about the external API).
+ */
+export class SessionNotReadyError extends Error {
+    readonly code: ErrorCode = "SESSION_NOT_READY";
+
+    constructor(
+        message = "Start a restock session before sending commands.",
+    ) {
+        super(message);
+        this.name = "SessionNotReadyError";
+    }
+}

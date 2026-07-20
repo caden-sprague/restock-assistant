@@ -8,9 +8,11 @@
  * the index (InventoryIndexService, Joel) at session start.
  */
 
-import type { InventoryIndex } from "../models/inventoryItem";
+import type {InventoryIndex, InventoryItem} from "../models/inventoryItem";
 import type { PlanogramService } from "./planogramService";
 import type { InventoryIndexService } from "./inventoryIndexService";
+import { SessionNotReadyError } from "../errors";
+import {logger} from "../utils/logger";
 
 export type SessionState = {
     siteId: string;
@@ -35,10 +37,18 @@ export class SessionService {
         const planogram = await this.planogramFetcher.fetchPlanogram(siteId);
         // TODO implement indexer's build and remove stubbed InventoryIndex
         // const index = this.indexer.build(planogram);
+        const tempItem: InventoryItem = {
+            aliases: ["Barebells"],
+            displayName: "Barebells Protein Cookie & Cream",
+            normalizedName: "Barebells Protein Cookie & Cream",
+            siteInventoryId: 294450
+        }
+        const tempArr: InventoryItem[] = [tempItem];
+
         const index: InventoryIndex = {
-            byId: new Map(),
-            byName: new Map(),
-            allItems: [],
+            byId: new Map([[294450, tempItem]]),
+            byName: new Map([["Barebells Protein Cookie & Cream", [tempItem]]]),
+            allItems: [tempItem],
         };
 
         this.active = {
@@ -47,11 +57,20 @@ export class SessionService {
             index,
             startedAt: new Date().toISOString(),
         };
+        logger.info("Starting session");
         return this.active;
     }
 
-    /** Throws SESSION_NOT_READY (via caller) if no session is active. */
+    /** The active session, or null if none has been started yet. */
+    getActive(): SessionState | null {
+        return this.active;
+    }
+
+    /** The active planogram index; throws SessionNotReadyError if none. */
     getActiveIndex(): InventoryIndex {
-        throw new Error("Not implemented: SessionService.getActiveIndex");
+        if (!this.active) {
+            throw new SessionNotReadyError();
+        }
+        return this.active.index;
     }
 }
