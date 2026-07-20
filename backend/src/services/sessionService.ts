@@ -23,16 +23,31 @@ export class SessionService {
     private active: SessionState | null = null;
 
     constructor(
-        private readonly planograms: PlanogramService,
+        private readonly planogramFetcher: PlanogramService,
         private readonly indexer: InventoryIndexService,
     ) {}
 
     /** Fetch planogram → build index → store as the active session. */
     async startSession(
-        _siteId: string,
-        _restockSessionId: string,
+        siteId: string,
+        restockSessionId: string,
     ): Promise<SessionState> {
-        throw new Error("Not implemented: SessionService.startSession");
+        const planogram = await this.planogramFetcher.fetchPlanogram(siteId);
+        // TODO implement indexer's build and remove stubbed InventoryIndex
+        // const index = this.indexer.build(planogram);
+        const index: InventoryIndex = {
+            byId: new Map(),
+            byName: new Map(),
+            allItems: [],
+        };
+
+        this.active = {
+            siteId,
+            restockSessionId,
+            index,
+            startedAt: new Date().toISOString(),
+        };
+        return this.active;
     }
 
     /** Throws SESSION_NOT_READY (via caller) if no session is active. */

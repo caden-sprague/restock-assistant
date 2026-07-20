@@ -51,11 +51,10 @@ export function createApp(env: Env): FastifyInstance {
     const restock = new RestockService(micromart, sessions, audit);
 
     // Controllers.
-    // NOTE: SessionController falls back to env.defaultSiteId /
-    // env.defaultRestockSessionId when the request body is empty (§15). That
-    // wiring lands with SessionController.startSession (Milestone 1); the graph
-    // above is complete regardless.
-    const sessionController = new SessionController(sessions);
+    const sessionController = new SessionController(sessions, {
+        siteId: env.defaultSiteId,
+        restockSessionId: env.defaultRestockSessionId,
+    });
     const commandController = new CommandController(
         parser,
         resolver,
