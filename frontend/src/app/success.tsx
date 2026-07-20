@@ -3,11 +3,11 @@ import { router, useLocalSearchParams } from "expo-router";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-const REDIRECT_SECONDS = 4;
+const REDIRECT_SECONDS = 5;
 
 export default function SuccessScreen() {
-  const { command } = useLocalSearchParams<{
-    command?: string;
+  const { count } = useLocalSearchParams<{
+    count?: string;
   }>();
 
   const [secondsRemaining, setSecondsRemaining] =
@@ -15,7 +15,7 @@ export default function SuccessScreen() {
 
   useEffect(() => {
     if (secondsRemaining <= 0) {
-      router.replace("/session");
+      router.replace("/");
       return;
     }
 
@@ -26,12 +26,12 @@ export default function SuccessScreen() {
     return () => clearTimeout(timer);
   }, [secondsRemaining]);
 
-  function continueRestocking() {
-    router.replace("/session");
+  function returnHome() {
+    router.replace("/");
   }
 
-  function endSession() {
-    router.replace("/");
+  function startAnotherSession() {
+    router.replace("/session");
   }
 
   return (
@@ -41,44 +41,50 @@ export default function SuccessScreen() {
           <Text style={styles.check}>✓</Text>
         </View>
 
-        <Text style={styles.title}>Inventory Updated</Text>
+        <Text style={styles.title}>Session Submitted</Text>
 
         <Text style={styles.subtitle}>
-          Your command has been confirmed successfully.
+          {count || "All"} inventory{" "}
+          {count === "1" ? "change was" : "changes were"} submitted
+          successfully.
         </Text>
 
-        <View style={styles.card}>
-          <Text style={styles.label}>CONFIRMED COMMAND</Text>
+        <View style={styles.infoCard}>
+          <Text style={styles.infoTitle}>
+            Inventory updated
+          </Text>
 
-          <Text style={styles.command}>
-            {command || "Restocking command confirmed"}
+          <Text style={styles.infoText}>
+            The completed restocking session has now been sent.
           </Text>
         </View>
 
         <Text style={styles.redirectText}>
-          Returning to the active session in {secondsRemaining}...
+          Returning home in {secondsRemaining}...
         </Text>
 
         <Pressable
           style={({ pressed }) => [
-            styles.continueButton,
+            styles.primaryButton,
             pressed && styles.buttonPressed,
           ]}
-          onPress={continueRestocking}
+          onPress={startAnotherSession}
         >
-          <Text style={styles.continueButtonText}>
-            Continue Restocking
+          <Text style={styles.primaryButtonText}>
+            Start Another Session
           </Text>
         </Pressable>
 
         <Pressable
           style={({ pressed }) => [
-            styles.endButton,
+            styles.secondaryButton,
             pressed && styles.buttonPressed,
           ]}
-          onPress={endSession}
+          onPress={returnHome}
         >
-          <Text style={styles.endButtonText}>End Session</Text>
+          <Text style={styles.secondaryButtonText}>
+            Return Home
+          </Text>
         </Pressable>
       </View>
     </SafeAreaView>
@@ -103,90 +109,89 @@ const styles = StyleSheet.create({
     height: 120,
     borderRadius: 60,
     backgroundColor: "#147653",
-    justifyContent: "center",
     alignItems: "center",
-    marginBottom: 30,
+    justifyContent: "center",
+    marginBottom: 28,
   },
 
   check: {
     color: "#FFFFFF",
     fontSize: 60,
-    fontWeight: "bold",
+    fontWeight: "700",
   },
 
   title: {
     color: "#17221D",
     fontSize: 30,
-    fontWeight: "700",
+    fontWeight: "800",
     textAlign: "center",
   },
 
   subtitle: {
     color: "#69756E",
-    fontSize: 17,
-    lineHeight: 24,
+    fontSize: 16,
+    lineHeight: 23,
     textAlign: "center",
     marginTop: 10,
-    marginBottom: 30,
   },
 
-  card: {
+  infoCard: {
     width: "100%",
     maxWidth: 420,
     backgroundColor: "#FFFFFF",
-    borderRadius: 16,
-    padding: 20,
     borderWidth: 1,
-    borderColor: "#E1E7E3",
+    borderColor: "#DDE4E0",
+    borderRadius: 17,
+    padding: 20,
+    marginTop: 28,
   },
 
-  label: {
-    color: "#7A857F",
-    fontSize: 11,
-    fontWeight: "700",
-    letterSpacing: 1,
-    marginBottom: 10,
-  },
-
-  command: {
+  infoTitle: {
     color: "#17221D",
-    fontSize: 20,
-    fontWeight: "600",
+    fontSize: 17,
+    fontWeight: "700",
+  },
+
+  infoText: {
+    color: "#69756E",
+    fontSize: 14,
+    lineHeight: 20,
+    marginTop: 6,
   },
 
   redirectText: {
-    color: "#69756E",
+    color: "#7B8680",
     fontSize: 14,
     marginTop: 20,
     marginBottom: 18,
   },
 
-  continueButton: {
+  primaryButton: {
     width: "100%",
     maxWidth: 420,
-    height: 56,
+    minHeight: 56,
     backgroundColor: "#147653",
     borderRadius: 16,
-    justifyContent: "center",
     alignItems: "center",
+    justifyContent: "center",
   },
 
-  continueButtonText: {
+  primaryButtonText: {
     color: "#FFFFFF",
     fontSize: 17,
     fontWeight: "700",
   },
 
-  endButton: {
-    height: 48,
-    justifyContent: "center",
-    alignItems: "center",
+  secondaryButton: {
+    minHeight: 50,
     paddingHorizontal: 20,
-    marginTop: 8,
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 6,
   },
 
-  endButtonText: {
-    color: "#C83232",
+  secondaryButtonText: {
+    color: "#147653",
     fontSize: 15,
     fontWeight: "700",
   },

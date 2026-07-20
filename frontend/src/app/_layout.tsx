@@ -1,11 +1,14 @@
 import { Stack } from "expo-router";
+import { RestockSessionProvider } from "../context/RestockSessionContext";
 
 export default function RootLayout() {
   return (
-    <Stack
-      screenOptions={{
-        headerShown: false,
-      }}
-    />
+    <RestockSessionProvider>
+      <Stack
+        screenOptions={{
+          headerShown: false,
+        }}
+      />
+    </RestockSessionProvider>
   );
 }
