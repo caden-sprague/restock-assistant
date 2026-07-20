@@ -2,7 +2,10 @@ import { useState } from "react";
 import { router } from "expo-router";
 import {
   Keyboard,
+  KeyboardAvoidingView,
+  Platform,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -14,9 +17,13 @@ export default function SessionScreen() {
   const [isListening, setIsListening] = useState(false);
   const [command, setCommand] = useState("");
 
+  const canSubmit = command.trim().length > 0;
+
   function openSettings() {
-    console.log("Settings pressed");
-  }
+  Keyboard.dismiss();
+  setIsListening(false);
+  router.push("/settings");
+}
 
   function toggleMicrophone() {
     Keyboard.dismiss();
@@ -24,29 +31,29 @@ export default function SessionScreen() {
   }
 
   function submitCommand() {
-  const cleanedCommand = command.trim();
+    const cleanedCommand = command.trim();
 
-  if (!cleanedCommand) {
-    return;
+    if (!cleanedCommand) {
+      return;
+    }
+
+    setIsListening(false);
+    Keyboard.dismiss();
+
+    router.push({
+      pathname: "/confirmation",
+      params: {
+        command: cleanedCommand,
+      },
+    });
   }
-
-  Keyboard.dismiss();
-
-  router.push({
-    pathname: "/confirmation",
-    params: {
-      command: cleanedCommand,
-    },
-  });
-}
 
   function endSession() {
     setIsListening(false);
     setCommand("");
+    Keyboard.dismiss();
     router.replace("/");
   }
-
-  const canSubmit = command.trim().length > 0;
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -75,77 +82,89 @@ export default function SessionScreen() {
           </Pressable>
         </View>
 
-        <View style={styles.content}>
-          <Text
-            style={[
-              styles.statusText,
-              isListening
-                ? styles.statusListening
-                : styles.statusNotListening,
-            ]}
+        <KeyboardAvoidingView
+          style={styles.keyboardView}
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          keyboardVerticalOffset={0}
+        >
+          <ScrollView
+            style={styles.scrollView}
+            contentContainerStyle={styles.scrollContent}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
           >
-            {isListening ? "Listening..." : "Microphone off"}
-          </Text>
-
-          <Pressable
-            style={({ pressed }) => [
-              styles.microphoneOuter,
-              isListening && styles.microphoneOuterActive,
-              pressed && styles.microphonePressed,
-            ]}
-            onPress={toggleMicrophone}
-          >
-            <View
+            <Text
               style={[
-                styles.microphoneButton,
+                styles.statusText,
                 isListening
-                  ? styles.microphoneButtonActive
-                  : styles.microphoneButtonInactive,
+                  ? styles.statusListening
+                  : styles.statusNotListening,
               ]}
             >
-              <Text style={styles.microphoneIcon}>🎙️</Text>
-            </View>
-          </Pressable>
-
-          <Text style={styles.questionText}>
-            {isListening
-              ? "What are you restocking?"
-              : "Speak or type a command"}
-          </Text>
-
-          <Text style={styles.instructions}>
-            {isListening
-              ? "Speak your restocking command now"
-              : "Press the microphone or enter the command below"}
-          </Text>
-
-          <View style={styles.inputSection}>
-            <Text style={styles.inputLabel}>TYPE A COMMAND</Text>
-
-            <TextInput
-              style={styles.commandInput}
-              value={command}
-              onChangeText={setCommand}
-              placeholder="Example: Fairlife count 5"
-              placeholderTextColor="#8B9690"
-              returnKeyType="done"
-              onSubmitEditing={submitCommand}
-              autoCapitalize="sentences"
-            />
+              {isListening ? "Listening..." : "Microphone off"}
+            </Text>
 
             <Pressable
               style={({ pressed }) => [
-                styles.submitButton,
-                !canSubmit && styles.submitButtonDisabled,
-                pressed && canSubmit && styles.buttonPressed,
+                styles.microphoneOuter,
+                isListening && styles.microphoneOuterActive,
+                pressed && styles.microphonePressed,
               ]}
-              onPress={submitCommand}
-              disabled={!canSubmit}
+              onPress={toggleMicrophone}
             >
-              <Text style={styles.submitButtonText}>Submit Command</Text>
+              <View
+                style={[
+                  styles.microphoneButton,
+                  isListening
+                    ? styles.microphoneButtonActive
+                    : styles.microphoneButtonInactive,
+                ]}
+              >
+                <Text style={styles.microphoneIcon}>🎙️</Text>
+              </View>
             </Pressable>
-          </View>
-        </View>
+
+            <Text style={styles.questionText}>
+              {isListening
+                ? "What are you restocking?"
+                : "Speak or type a command"}
+            </Text>
+
+            <Text style={styles.instructions}>
+              {isListening
+                ? "Speak your restocking command now"
+                : "Press the microphone or enter the command below"}
+            </Text>
+
+            <View style={styles.inputSection}>
+              <Text style={styles.inputLabel}>TYPE A COMMAND</Text>
+
+              <TextInput
+                style={styles.commandInput}
+                value={command}
+                onChangeText={setCommand}
+                placeholder="Example: Set Fairlife to 5"
+                placeholderTextColor="#8B9690"
+                returnKeyType="done"
+                onSubmitEditing={submitCommand}
+                autoCapitalize="sentences"
+                autoCorrect
+              />
+
+              <Pressable
+                style={({ pressed }) => [
+                  styles.submitButton,
+                  !canSubmit && styles.submitButtonDisabled,
+                  pressed && canSubmit && styles.buttonPressed,
+                ]}
+                onPress={submitCommand}
+                disabled={!canSubmit}
+              >
+                <Text style={styles.submitButtonText}>Submit Command</Text>
+              </Pressable>
+            </View>
+          </ScrollView>
+        </KeyboardAvoidingView>
       </View>
     </SafeAreaView>
   );
@@ -211,11 +230,21 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
 
-  content: {
+  keyboardView: {
     flex: 1,
+  },
+
+  scrollView: {
+    flex: 1,
+  },
+
+  scrollContent: {
+    flexGrow: 1,
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 24,
+    paddingTop: 32,
+    paddingBottom: 48,
   },
 
   statusText: {

@@ -1,45 +1,85 @@
+import { useEffect, useState } from "react";
 import { router, useLocalSearchParams } from "expo-router";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+
+const REDIRECT_SECONDS = 4;
 
 export default function SuccessScreen() {
   const { command } = useLocalSearchParams<{
     command?: string;
   }>();
 
+  const [secondsRemaining, setSecondsRemaining] =
+    useState(REDIRECT_SECONDS);
+
+  useEffect(() => {
+    if (secondsRemaining <= 0) {
+      router.replace("/session");
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      setSecondsRemaining((current) => current - 1);
+    }, 1000);
+
+    return () => clearTimeout(timer);
+  }, [secondsRemaining]);
+
+  function continueRestocking() {
+    router.replace("/session");
+  }
+
+  function endSession() {
+    router.replace("/");
+  }
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
-
         <View style={styles.checkCircle}>
           <Text style={styles.check}>✓</Text>
         </View>
 
-        <Text style={styles.title}>
-          Inventory Updated
-        </Text>
+        <Text style={styles.title}>Inventory Updated</Text>
 
         <Text style={styles.subtitle}>
-          Your command has been confirmed.
+          Your command has been confirmed successfully.
         </Text>
 
         <View style={styles.card}>
-          <Text style={styles.label}>COMMAND</Text>
+          <Text style={styles.label}>CONFIRMED COMMAND</Text>
 
           <Text style={styles.command}>
-            {command}
+            {command || "Restocking command confirmed"}
           </Text>
         </View>
 
+        <Text style={styles.redirectText}>
+          Returning to the active session in {secondsRemaining}...
+        </Text>
+
         <Pressable
-          style={styles.button}
-          onPress={() => router.replace("/session")}
+          style={({ pressed }) => [
+            styles.continueButton,
+            pressed && styles.buttonPressed,
+          ]}
+          onPress={continueRestocking}
         >
-          <Text style={styles.buttonText}>
+          <Text style={styles.continueButtonText}>
             Continue Restocking
           </Text>
         </Pressable>
 
+        <Pressable
+          style={({ pressed }) => [
+            styles.endButton,
+            pressed && styles.buttonPressed,
+          ]}
+          onPress={endSession}
+        >
+          <Text style={styles.endButtonText}>End Session</Text>
+        </Pressable>
       </View>
     </SafeAreaView>
   );
@@ -55,7 +95,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    padding: 24,
+    paddingHorizontal: 24,
   },
 
   checkCircle: {
@@ -69,50 +109,61 @@ const styles = StyleSheet.create({
   },
 
   check: {
-    color: "white",
+    color: "#FFFFFF",
     fontSize: 60,
     fontWeight: "bold",
   },
 
   title: {
+    color: "#17221D",
     fontSize: 30,
     fontWeight: "700",
-    color: "#17221D",
+    textAlign: "center",
   },
 
   subtitle: {
-    fontSize: 17,
     color: "#69756E",
-    marginTop: 10,
+    fontSize: 17,
+    lineHeight: 24,
     textAlign: "center",
+    marginTop: 10,
     marginBottom: 30,
   },
 
   card: {
     width: "100%",
-    backgroundColor: "white",
+    maxWidth: 420,
+    backgroundColor: "#FFFFFF",
     borderRadius: 16,
     padding: 20,
-    marginBottom: 35,
     borderWidth: 1,
     borderColor: "#E1E7E3",
   },
 
   label: {
-    fontSize: 12,
-    fontWeight: "700",
     color: "#7A857F",
+    fontSize: 11,
+    fontWeight: "700",
+    letterSpacing: 1,
     marginBottom: 10,
   },
 
   command: {
+    color: "#17221D",
     fontSize: 20,
     fontWeight: "600",
-    color: "#17221D",
   },
 
-  button: {
+  redirectText: {
+    color: "#69756E",
+    fontSize: 14,
+    marginTop: 20,
+    marginBottom: 18,
+  },
+
+  continueButton: {
     width: "100%",
+    maxWidth: 420,
     height: 56,
     backgroundColor: "#147653",
     borderRadius: 16,
@@ -120,9 +171,27 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
 
-  buttonText: {
-    color: "white",
+  continueButtonText: {
+    color: "#FFFFFF",
     fontSize: 17,
     fontWeight: "700",
+  },
+
+  endButton: {
+    height: 48,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 20,
+    marginTop: 8,
+  },
+
+  endButtonText: {
+    color: "#C83232",
+    fontSize: 15,
+    fontWeight: "700",
+  },
+
+  buttonPressed: {
+    opacity: 0.7,
   },
 });
