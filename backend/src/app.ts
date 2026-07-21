@@ -10,7 +10,10 @@
  * later is a one-line change here.
  */
 
-import Fastify, { type FastifyInstance } from "fastify";
+import Fastify, {
+    type FastifyInstance,
+    type FastifyError,
+} from "fastify";
 
 import type { Env } from "./config/env";
 import { createMicromartConfig } from "./config/micromartConfig";
@@ -68,7 +71,15 @@ export function createApp(env: Env): FastifyInstance {
 
     // Fastify app. `logger: false` — we use utils/logger for diagnostics and
     // AuditLogService for business records (§7, §18); no pino noise.
-    const app = Fastify({ logger: false });
+    //
+    // ajv is set strict so schema validation REJECTS bad bodies rather than
+    // silently repairing them: coerceTypes off (a string "5" is not a valid
+    // number), removeAdditional off (an unknown field is a 400, not stripped).
+    // This makes the INVALID_REQUEST contract (§17) honest.
+    const app = Fastify({
+        logger: false,
+        ajv: { customOptions: { coerceTypes: false, removeAdditional: false } },
+    });
 
     app.get("/health", async () => ({ status: "ok" }));
 
@@ -88,7 +99,21 @@ export function createApp(env: Env): FastifyInstance {
     // deployed anywhere reachable, gate the detailed message behind a NODE_ENV
     // check (dev → real message; prod → generic "Internal server error.") so
     // internal details/stacks aren't leaked to clients.
-    app.setErrorHandler((err, _req, reply) => {
+    app.setErrorHandler((err: FastifyError, _req, reply) => {
+        // Fastify schema-validation failures are a malformed request, not a
+        // server fault — report INVALID_REQUEST/400 (§17) with ajv's message
+        // (e.g. "body/quantity must be number") rather than a 500.
+        if (err.validation) {
+            logger.info("Request validation failed", { message: err.message });
+            const body: ErrorResponse = {
+                status: "error",
+                code: "INVALID_REQUEST",
+                message: err.message,
+            };
+            reply.code(httpStatusFor(body)).send(body);
+            return;
+        }
+
         logger.error("Unhandled request error", err);
         const body: ErrorResponse = {
             status: "error",

@@ -763,12 +763,19 @@ Unexpected internal error
 
 The error `code` values are: `SESSION_NOT_READY`, `AUTH_EXPIRED`,
 `INVALID_QUANTITY`, `UNPARSEABLE_COMMAND`, `PRODUCT_NOT_FOUND`,
-`PLANOGRAM_FETCH_FAILED`, `MICROMART_POST_FAILED`, `NETWORK_ERROR`, and
-`INTERNAL_ERROR`. `INTERNAL_ERROR` is the catch-all returned by the app's
-last-resort error handler for any unexpected/unhandled fault (a bug, or a
-collaborator that threw a non-typed error); controllers return the specific
-codes. Its response includes the real error message to keep failures
-debuggable.
+`PLANOGRAM_FETCH_FAILED`, `MICROMART_POST_FAILED`, `NETWORK_ERROR`,
+`INVALID_REQUEST`, and `INTERNAL_ERROR`.
+
+`INVALID_REQUEST` (HTTP 400) is returned when a request body fails JSON-schema
+validation at the route (missing required field, wrong type, unknown field).
+It is structural and distinct from `INVALID_QUANTITY`, which is the *semantic*
+quantity rule (non-negative integer) enforced by the service. Route schemas
+check structure only; the services own the semantic checks.
+
+`INTERNAL_ERROR` (HTTP 500) is the catch-all returned by the app's last-resort
+error handler for any unexpected/unhandled fault (a bug, or a collaborator that
+threw a non-typed error); controllers return the specific codes. Its response
+includes the real error message to keep failures debuggable.
 
 ### Example Error Responses
 

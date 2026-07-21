@@ -18,6 +18,11 @@ export type ErrorCode =
     | "PLANOGRAM_FETCH_FAILED"
     | "MICROMART_POST_FAILED"
     | "NETWORK_ERROR"
+    // A request body that fails JSON-schema validation at the route (missing
+    // required field, wrong type, unknown field). Structural — distinct from
+    // INVALID_QUANTITY, which is the semantic quantity rule owned by the
+    // service. Returned by the app's error handler when Fastify rejects a body.
+    | "INVALID_REQUEST"
     // Catch-all for an unexpected/unhandled server fault (a bug, or a
     // collaborator that threw a non-typed error). The app's last-resort error
     // handler (app.ts) returns this; controllers use the specific codes above.
