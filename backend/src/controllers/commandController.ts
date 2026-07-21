@@ -47,15 +47,9 @@ export class CommandController {
             );
         }
 
-        // TODO Parse (Joel's CommandParser). ParseError → UNPARSEABLE_COMMAND (§13).
         let parsed: ParsedCommand;
         try {
-            // parsed = this.parser.parse(text);
-            parsed = {
-                action: "correct",
-                quantity: 5,
-                productQuery: "Barebells Protein Cookie & Cream"
-            }
+            parsed = this.parser.parse(text);
         } catch (err) {
             if (err instanceof ParseError) {
                 return this.fail(
@@ -83,50 +77,38 @@ export class CommandController {
             );
         }
 
-        // TODO Resolve (Joel's InventoryResolver) against the active index. Remove temp item and second setting of result
-        let result : ResolveResult;// = this.resolver.resolve(parsed.productQuery, active.index);
-        const tempItem: InventoryItem = {
-            aliases: ["Barebells"],
-            displayName: "Barebells Protein Cookie & Cream",
-            normalizedName: "Barebells Protein Cookie & Cream",
-            siteInventoryId: 294450
-        }
-        result = {
-            kind: "single",
-            item: tempItem
-        }
+        let result : ResolveResult = this.resolver.resolve(parsed.productQuery, active.index);
 
         switch (result.kind) {
-            // TODO commented just for type checker, once the resolver.resolve() is implemented, this should be uncommented!
-            // case "not_found":
-            //     return this.fail(
-            //         "PRODUCT_NOT_FOUND",
-            //         `No matching inventory item found for '${parsed.productQuery}'.`,
-            //         {
-            //             commandText: text,
-            //             parsedProductQuery: parsed.productQuery,
-            //             quantity: parsed.quantity,
-            //         },
-            //     );
-            //
-            // case "ambiguous": {
-            //     this.audit.log({
-            //         timestamp: new Date().toISOString(),
-            //         commandText: text,
-            //         parsedProductQuery: parsed.productQuery,
-            //         quantity: parsed.quantity,
-            //         status: "needs_confirmation",
-            //     });
-            //     return {
-            //         status: "needs_confirmation",
-            //         message: "Which item did you mean?",
-            //         options: result.options.map((item) => ({
-            //             name: item.displayName,
-            //             siteInventoryId: item.siteInventoryId,
-            //         })),
-            //         quantity: parsed.quantity,
-            //     };
-            // }
+            case "not_found":
+                return this.fail(
+                    "PRODUCT_NOT_FOUND",
+                    `No matching inventory item found for '${parsed.productQuery}'.`,
+                    {
+                        commandText: text,
+                        parsedProductQuery: parsed.productQuery,
+                        quantity: parsed.quantity,
+                    },
+                );
+
+            case "ambiguous": {
+                this.audit.log({
+                    timestamp: new Date().toISOString(),
+                    commandText: text,
+                    parsedProductQuery: parsed.productQuery,
+                    quantity: parsed.quantity,
+                    status: "needs_confirmation",
+                });
+                return {
+                    status: "needs_confirmation",
+                    message: "Which item did you mean?",
+                    options: result.options.map((item) => ({
+                        name: item.displayName,
+                        siteInventoryId: item.siteInventoryId,
+                    })),
+                    quantity: parsed.quantity,
+                };
+            }
 
             case "single":
                 // RestockService owns the submission audit entry.

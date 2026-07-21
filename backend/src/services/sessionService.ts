@@ -35,21 +35,7 @@ export class SessionService {
         restockSessionId: string,
     ): Promise<SessionState> {
         const planogram = await this.planogramFetcher.fetchPlanogram(siteId);
-        // TODO implement indexer's build and remove stubbed InventoryIndex
-        // const index = this.indexer.build(planogram);
-        const tempItem: InventoryItem = {
-            aliases: ["Barebells"],
-            displayName: "Barebells Protein Cookie & Cream",
-            normalizedName: "Barebells Protein Cookie & Cream",
-            siteInventoryId: 294450
-        }
-        const tempArr: InventoryItem[] = [tempItem];
-
-        const index: InventoryIndex = {
-            byId: new Map([[294450, tempItem]]),
-            byName: new Map([["Barebells Protein Cookie & Cream", [tempItem]]]),
-            allItems: [tempItem],
-        };
+        const index = this.indexer.build(planogram);
 
         this.active = {
             siteId,
