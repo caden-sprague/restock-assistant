@@ -50,7 +50,7 @@ export class CommandController {
         // TODO Parse (Joel's CommandParser). ParseError → UNPARSEABLE_COMMAND (§13).
         let parsed: ParsedCommand;
         try {
-            parsed = this.parser.parse(text);
+            // parsed = this.parser.parse(text);
             parsed = {
                 action: "correct",
                 quantity: 5,
@@ -84,7 +84,7 @@ export class CommandController {
         }
 
         // TODO Resolve (Joel's InventoryResolver) against the active index. Remove temp item and second setting of result
-        let result : ResolveResult = this.resolver.resolve(parsed.productQuery, active.index);
+        let result : ResolveResult;// = this.resolver.resolve(parsed.productQuery, active.index);
         const tempItem: InventoryItem = {
             aliases: ["Barebells"],
             displayName: "Barebells Protein Cookie & Cream",
