@@ -1,0 +1,28 @@
+Ok, next thing I want to build is the POST /session/start endpoint on the backend. Before you write anything, read through docs/restock_assistant_mvp_plan.md — that's basically our spec, so follow the folder structure / models / naming it lays out. If something I'm asking for doesn't line up with the plan, don't just quietly do it your way, flag it and update the plan doc in the same change so they don't drift apart.
+
+This is the endpoint the mobile app hits to kick off a restock session. Quick reminder on how we're doing things on this project:
+
+- Node + TypeScript, Fastify for the server. Keep Fastify out of the controllers/services though — it should only show up in app.ts and the route file (sessionRoutes.ts). The controller should just take a plain input object and hand back a plain response object, none of the req/reply stuff.
+- Wire everything up with constructor injection in app.ts. Nothing else should be calling new on a service.
+- Everything's in memory for now (one user, one active session at a time). No database yet, we'll deal with that later.
+
+Here's what it should actually do:
+
+The body is optional. It can have siteId and/or restockSessionId, but if either one is missing or blank just fall back to the defaults from the env vars. Trim them too, and if someone sends a whitespace-only string treat it like it wasn't there.
+
+When a session starts: go fetch the planogram from Micromart for that site, build the in-memory inventory index off of it, and save it as the active session (site id, restock session id, the index, and a startedAt timestamp).
+
+Really important thing here — this endpoint should never talk to Micromart directly. It goes through a PlanogramService, which calls the MicromartClient, and the client is the only thing that knows the real Micromart URLs and payloads. Auth comes from the AuthProvider interface, so don't go reading the cookie directly anywhere.
+
+If it works, return something like { status: "ready", siteId, restockSessionId, itemCount }, where itemCount is just how many items ended up in the index.
+
+For errors — everything we return has a status, and errors also carry a code. When Micromart fails we throw a typed MicromartError that already has the right code on it (expired cookie is AUTH_EXPIRED, some other bad response is PLANOGRAM_FETCH_FAILED, couldn't connect at all is NETWORK_ERROR). The controller should just pass that code straight through into the error response, don't go string-matching the error messages. And if something genuinely unexpected blows up (an actual bug), don't catch it and turn it into a fake code — let it bubble up to the app-level handler.
+
+Rough breakdown of the pieces I'm expecting:
+- SessionService — owns the active session. startSession(siteId, restockSessionId), getActive(), and getActiveIndex() which throws SESSION_NOT_READY if there's no session yet.
+- SessionController — the framework-agnostic handler. Does the env-default fallback, calls the service, maps MicromartError to the error response.
+- sessionRoutes.ts — thin Fastify wrapper: read the body, call the controller, set the HTTP status from our shared status-mapping helper (we keep the body-to-status mapping in one place so all the routes agree).
+
+Throw in some logging around session start and any failures, but that's the dev/diagnostic log, not the audit log — keep those two separate. And obviously never log the auth cookie.
+
+Keep it all properly typed. And write some unit tests for the controller with a faked SessionService — I want the env fallback covered (empty body, values given, trimming, whitespace-only, only one field set), the ready response including itemCount, the case where a MicromartError maps to the right code, and the case where an unexpected error just propagates instead of getting swallowed.
