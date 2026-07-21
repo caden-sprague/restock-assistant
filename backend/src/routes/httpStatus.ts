@@ -22,6 +22,7 @@ const ERROR_HTTP_STATUS: Record<ErrorCode, number> = {
     PLANOGRAM_FETCH_FAILED: 502,
     MICROMART_POST_FAILED: 502,
     NETWORK_ERROR: 502,
+    INTERNAL_ERROR: 500,
 };
 
 export function httpStatusFor(body: unknown): number {

@@ -17,7 +17,11 @@ export type ErrorCode =
     | "PRODUCT_NOT_FOUND"
     | "PLANOGRAM_FETCH_FAILED"
     | "MICROMART_POST_FAILED"
-    | "NETWORK_ERROR";
+    | "NETWORK_ERROR"
+    // Catch-all for an unexpected/unhandled server fault (a bug, or a
+    // collaborator that threw a non-typed error). The app's last-resort error
+    // handler (app.ts) returns this; controllers use the specific codes above.
+    | "INTERNAL_ERROR";
 
 /** Minimal item reference returned to the app (never the full InventoryItem). */
 export type ItemRef = {

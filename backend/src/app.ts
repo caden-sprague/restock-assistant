@@ -32,6 +32,8 @@ import { InventoryController } from "./controllers/inventoryController";
 import { registerSessionRoutes } from "./routes/sessionRoutes";
 import { registerCommandRoutes } from "./routes/commandRoutes";
 import { registerInventoryRoutes } from "./routes/inventoryRoutes";
+import { httpStatusFor } from "./routes/httpStatus";
+import type { ErrorResponse } from "./models/apiResponses";
 import { logger } from "./utils/logger";
 
 export function createApp(env: Env): FastifyInstance {
@@ -76,12 +78,24 @@ export function createApp(env: Env): FastifyInstance {
 
     // Last-resort handler for anything a controller lets throw (e.g. an
     // unexpected service failure). Known outcomes are returned as typed
-    // ErrorResponse bodies by the controllers themselves.
+    // ErrorResponse bodies by the controllers themselves; this maps everything
+    // else to the INTERNAL_ERROR code (§17) and surfaces the real message so a
+    // failure is debuggable from the response, not just the server log. The
+    // full error (incl. stack) still goes to logger.error.
+    //
+    // TODO(Caden): the real error message is returned in EVERY environment,
+    // which is fine for the single-user, non-public MVP. Before this backend is
+    // deployed anywhere reachable, gate the detailed message behind a NODE_ENV
+    // check (dev → real message; prod → generic "Internal server error.") so
+    // internal details/stacks aren't leaked to clients.
     app.setErrorHandler((err, _req, reply) => {
         logger.error("Unhandled request error", err);
-        reply
-            .code(500)
-            .send({ status: "error", message: "Internal server error." });
+        const body: ErrorResponse = {
+            status: "error",
+            code: "INTERNAL_ERROR",
+            message: err instanceof Error ? err.message : String(err),
+        };
+        reply.code(httpStatusFor(body)).send(body);
     });
 
     return app;

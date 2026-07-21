@@ -758,7 +758,17 @@ Invalid command format
 Invalid quantity
 Micromart POST failed
 Network failure
+Unexpected internal error
 ```
+
+The error `code` values are: `SESSION_NOT_READY`, `AUTH_EXPIRED`,
+`INVALID_QUANTITY`, `UNPARSEABLE_COMMAND`, `PRODUCT_NOT_FOUND`,
+`PLANOGRAM_FETCH_FAILED`, `MICROMART_POST_FAILED`, `NETWORK_ERROR`, and
+`INTERNAL_ERROR`. `INTERNAL_ERROR` is the catch-all returned by the app's
+last-resort error handler for any unexpected/unhandled fault (a bug, or a
+collaborator that threw a non-typed error); controllers return the specific
+codes. Its response includes the real error message to keep failures
+debuggable.
 
 ### Example Error Responses
 
@@ -783,6 +793,14 @@ Network failure
   "status": "error",
   "code": "INVALID_QUANTITY",
   "message": "Quantity must be a non-negative number."
+}
+```
+
+```json
+{
+  "status": "error",
+  "code": "INTERNAL_ERROR",
+  "message": "Not implemented: InventoryIndexService.build"
 }
 ```
 
