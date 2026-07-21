@@ -43,7 +43,11 @@ export class SessionService {
             index,
             startedAt: new Date().toISOString(),
         };
-        logger.info("Starting session");
+        logger.info("Session started", {
+            siteId,
+            restockSessionId,
+            itemCount: index.allItems.length,
+        });
         return this.active;
     }
 
