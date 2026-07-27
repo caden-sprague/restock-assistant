@@ -83,11 +83,7 @@ export function createApp(env: Env): FastifyInstance {
 
     app.get("/health", async () => ({ status: "ok" }));
 
-    app.get("/", async () => ({
-        status: "ok",
-        service: "restock-assistant-backend",
-        message: "Restock Assistant API is running.",
-    }));
+    app.get("/", async () => ({ status: "ok" }));
 
     registerSessionRoutes(app, sessionController);
     registerCommandRoutes(app, commandController);
