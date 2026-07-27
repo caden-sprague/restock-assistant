@@ -12,7 +12,7 @@
 import type { MicromartClient } from "../clients/micromartClient";
 import type { AuditLogService } from "./auditLogService";
 import type { SessionService } from "./sessionService";
-import type { RestockEvent } from "../models/restockEvent";
+import { RestockEvent } from "../models/restockEvent";
 import type {
     SuccessResponse,
     ErrorResponse,

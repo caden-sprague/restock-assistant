@@ -50,22 +50,42 @@ export class MicromartClient {
         // An expired/invalid cookie comes back as 401/403 — a distinct, actionable
         // outcome (refresh the cookie) vs. a generic upstream failure (§17).
         if (response.status === 401 || response.status === 403) {
+            const body = await readErrorBody(response);
+            logger.warn("Planogram fetch: auth rejected", {
+                siteId,
+                status: response.status,
+                body,
+            });
             throw new MicromartError(
                 "AUTH_EXPIRED",
                 "Micromart session appears to be expired. Refresh the cookie and restart the backend.",
+                body,
             );
         }
 
         if (!response.ok) {
+            const body = await readErrorBody(response);
+            logger.warn("Planogram fetch failed", {
+                siteId,
+                status: response.status,
+                body,
+            });
             throw new MicromartError(
                 "PLANOGRAM_FETCH_FAILED",
                 `Micromart returned ${response.status} fetching the planogram for site ${siteId}.`,
+                body,
             );
         }
 
         try {
-            return (await response.json()) as Planogram;
+            const planogram = (await response.json()) as Planogram;
+            logger.debug("Planogram fetched", { siteId, status: response.status });
+            return planogram;
         } catch (err) {
+            logger.warn("Planogram fetch: non-JSON response", {
+                siteId,
+                status: response.status,
+            });
             throw new MicromartError(
                 "PLANOGRAM_FETCH_FAILED",
                 "Micromart returned a non-JSON planogram response.",
@@ -106,17 +126,54 @@ export class MicromartClient {
 
         // Same auth signal as getPlanogram: 401/403 means the cookie is stale.
         if (response.status === 401 || response.status === 403) {
+            const body = await readErrorBody(response);
+            logger.warn("Restock event: auth rejected", {
+                restockSessionId,
+                status: response.status,
+                body,
+            });
             throw new MicromartError(
                 "AUTH_EXPIRED",
                 "Micromart session appears to be expired. Refresh the cookie and restart the backend.",
+                body,
             );
         }
 
         if (!response.ok) {
+            const body = await readErrorBody(response);
+            logger.warn("Restock event failed", {
+                restockSessionId,
+                status: response.status,
+                body,
+            });
             throw new MicromartError(
                 "MICROMART_POST_FAILED",
                 `Micromart returned ${response.status} submitting the restock event.`,
+                body,
             );
         }
+
+        logger.debug("Restock event posted", {
+            restockSessionId,
+            status: response.status,
+        });
+    }
+}
+
+/**
+ * Read an error response body for diagnostics, truncated so a large/HTML error
+ * page can't flood the logs. Never throws — a body we can't read just becomes
+ * undefined rather than masking the original HTTP failure.
+ */
+const MAX_ERROR_BODY = 500;
+async function readErrorBody(response: Response): Promise<string | undefined> {
+    try {
+        const text = await response.text();
+        if (!text) return undefined;
+        return text.length > MAX_ERROR_BODY
+            ? `${text.slice(0, MAX_ERROR_BODY)}… (truncated)`
+            : text;
+    } catch {
+        return undefined;
     }
 }
