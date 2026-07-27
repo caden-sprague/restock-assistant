@@ -83,6 +83,8 @@ export function createApp(env: Env): FastifyInstance {
 
     app.get("/health", async () => ({ status: "ok" }));
 
+    app.get("/", async () => ({ status: "ok" }));
+
     registerSessionRoutes(app, sessionController);
     registerCommandRoutes(app, commandController);
     registerInventoryRoutes(app, inventoryController);

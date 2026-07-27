@@ -1,8 +1,39 @@
+import { useState } from "react";
 import { router } from "expo-router";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { startRestockSession } from "../services/api";
+
 export default function HomeScreen() {
+  const [isStarting, setIsStarting] = useState(false);
+
+  async function startSession() {
+    if (isStarting) {
+      return;
+    }
+
+    setIsStarting(true);
+
+    try {
+      const response = await startRestockSession();
+
+      if (response.status === "error") {
+        Alert.alert("Session unavailable", response.message);
+        return;
+      }
+
+      router.push("/session");
+    } catch (error) {
+      Alert.alert(
+        "Unable to start session",
+        error instanceof Error ? error.message : "Please try again."
+      );
+    } finally {
+      setIsStarting(false);
+    }
+  }
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
@@ -13,9 +44,12 @@ export default function HomeScreen() {
             styles.startButton,
             pressed && styles.pressed,
           ]}
-          onPress={() => router.push("/session")}
+          onPress={startSession}
+          disabled={isStarting}
         >
-          <Text style={styles.startButtonText}>Start Session</Text>
+          <Text style={styles.startButtonText}>
+            {isStarting ? "Starting..." : "Start Session"}
+          </Text>
         </Pressable>
       </View>
     </SafeAreaView>

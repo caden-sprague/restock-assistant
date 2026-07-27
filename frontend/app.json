@@ -9,7 +9,12 @@
     "userInterfaceStyle": "automatic",
     "ios": {
       "icon": "./assets/expo.icon",
-      "bundleIdentifier": "com.anonymous.restock-assistant"
+      "bundleIdentifier": "com.anonymous.restock-assistant",
+      "infoPlist": {
+        "NSSpeechRecognitionUsageDescription": "Allow Restock Assistant to recognize speech.",
+        "NSMicrophoneUsageDescription": "Allow Restock Assistant to use the microphone.",
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -18,7 +23,10 @@
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "android.permission.RECORD_AUDIO"
+      ]
     },
     "web": {
       "output": "static",
@@ -45,6 +53,13 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "router": {},
+      "apiBaseUrl": "http://localhost:3000",
+      "eas": {
+        "projectId": "d4cfb7eb-669f-4462-b198-11a4043a7ec8"
+      }
     }
   }
 }
