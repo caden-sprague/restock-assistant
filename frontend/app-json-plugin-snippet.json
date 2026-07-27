@@ -1,0 +1,13 @@
+{
+  "expo": {
+    "plugins": [
+      [
+        "expo-speech-recognition",
+        {
+          "microphonePermission": "Allow Restock Assistant to use the microphone.",
+          "speechRecognitionPermission": "Allow Restock Assistant to recognize speech."
+        }
+      ]
+    ]
+  }
+}

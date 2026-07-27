@@ -1,5 +1,4 @@
 import { router } from "expo-router";
-import { useState } from "react";
 import {
   Pressable,
   ScrollView,
@@ -9,16 +8,19 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-
-type MicrophoneMode = "pushToTalk" | "toggle";
+import { useVoiceSettings } from "../context/VoiceSettingsContext";
 
 export default function SettingsScreen() {
-  const [microphoneMode, setMicrophoneMode] =
-    useState<MicrophoneMode>("toggle");
-
-  const [soundFeedback, setSoundFeedback] = useState(true);
-  const [vibrationFeedback, setVibrationFeedback] = useState(false);
-  const [showTranscript, setShowTranscript] = useState(true);
+  const {
+    microphoneMode,
+    setMicrophoneMode,
+    soundFeedback,
+    setSoundFeedback,
+    vibrationFeedback,
+    setVibrationFeedback,
+    showTranscript,
+    setShowTranscript,
+  } = useVoiceSettings();
 
   function closeSettings() {
     router.back();

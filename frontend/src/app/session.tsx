@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { router } from "expo-router";
 import {
   Alert,
@@ -12,27 +12,131 @@ import {
   TextInput,
   View,
 } from "react-native";
+import {
+  ExpoSpeechRecognitionModule,
+  useSpeechRecognitionEvent,
+} from "expo-speech-recognition";
 import { SafeAreaView } from "react-native-safe-area-context";
+
 import { useRestockSession } from "../context/RestockSessionContext";
+import { useVoiceSettings } from "../context/VoiceSettingsContext";
 
 export default function SessionScreen() {
   const [isListening, setIsListening] = useState(false);
   const [command, setCommand] = useState("");
+  const [speechError, setSpeechError] = useState("");
 
-  const { changes, addChange, removeChange } =
-    useRestockSession();
+  const { microphoneMode, showTranscript } = useVoiceSettings();
+  const { changes, addChange, removeChange } = useRestockSession();
 
   const canSubmit = command.trim().length > 0;
 
-  function openSettings() {
-    Keyboard.dismiss();
+  /*
+   * Speech-recognition events
+   */
+
+  useSpeechRecognitionEvent("start", () => {
+    setIsListening(true);
+    setSpeechError("");
+  });
+
+  useSpeechRecognitionEvent("end", () => {
     setIsListening(false);
-    router.push("/settings");
+  });
+
+  useSpeechRecognitionEvent("result", (event) => {
+    const result = event.results[0]?.transcript;
+
+    if (result) {
+      setCommand(result.trim());
+    }
+  });
+
+  useSpeechRecognitionEvent("error", (event) => {
+  console.log("Speech error:");
+  console.log(JSON.stringify(event, null, 2));
+
+  setIsListening(false);
+
+  if (event.error !== "aborted") {
+    setSpeechError(
+      `${event.error}: ${event.message ?? "Unknown error"}`
+    );
+  }
+});
+
+  useEffect(() => {
+    return () => {
+      ExpoSpeechRecognitionModule.abort();
+    };
+  }, []);
+
+  /*
+   * Microphone controls
+   */
+
+  async function startMicrophone() {
+    Keyboard.dismiss();
+    setSpeechError("");
+
+    try {
+      if (!ExpoSpeechRecognitionModule.isRecognitionAvailable()) {
+        Alert.alert(
+          "Speech recognition unavailable",
+          "Speech recognition is unavailable on this device. You can still type a command."
+        );
+        return;
+      }
+
+      const permission =
+        await ExpoSpeechRecognitionModule.requestPermissionsAsync();
+
+      if (!permission.granted) {
+        Alert.alert(
+          "Permission required",
+          "Please allow microphone and speech-recognition access."
+        );
+        return;
+      }
+
+      ExpoSpeechRecognitionModule.start({
+        lang: "en-US",
+        interimResults: true,
+        continuous: microphoneMode === "toggle",
+      });
+    } catch (error) {
+      console.error("Unable to start speech recognition:", error);
+      setIsListening(false);
+      setSpeechError("Unable to start the microphone.");
+    }
+  }
+
+  function stopMicrophone() {
+    try {
+      ExpoSpeechRecognitionModule.stop();
+    } catch (error) {
+      console.error("Unable to stop speech recognition:", error);
+      setIsListening(false);
+    }
   }
 
   function toggleMicrophone() {
+    if (isListening) {
+      stopMicrophone();
+    } else {
+      startMicrophone();
+    }
+  }
+
+  /*
+   * Navigation and restock commands
+   */
+
+  function openSettings() {
     Keyboard.dismiss();
-    setIsListening((currentValue) => !currentValue);
+    ExpoSpeechRecognitionModule.abort();
+    setIsListening(false);
+    router.push("/settings");
   }
 
   function submitCommand() {
@@ -59,12 +163,12 @@ export default function SessionScreen() {
     });
 
     setCommand("");
-    setIsListening(false);
     Keyboard.dismiss();
   }
 
   function reviewSession() {
     Keyboard.dismiss();
+    ExpoSpeechRecognitionModule.abort();
     setIsListening(false);
 
     if (changes.length === 0) {
@@ -139,7 +243,21 @@ export default function SessionScreen() {
                 isListening && styles.microphoneOuterActive,
                 pressed && styles.microphonePressed,
               ]}
-              onPress={toggleMicrophone}
+              onPress={
+                microphoneMode === "toggle"
+                  ? toggleMicrophone
+                  : undefined
+              }
+              onPressIn={
+                microphoneMode === "pushToTalk"
+                  ? startMicrophone
+                  : undefined
+              }
+              onPressOut={
+                microphoneMode === "pushToTalk"
+                  ? stopMicrophone
+                  : undefined
+              }
             >
               <View
                 style={[
@@ -158,8 +276,24 @@ export default function SessionScreen() {
             </Text>
 
             <Text style={styles.instructions}>
-              Add each product change to this restocking session.
+              {microphoneMode === "pushToTalk"
+                ? "Hold the microphone while speaking."
+                : "Tap the microphone to start or stop."}
             </Text>
+
+            {speechError ? (
+              <Text style={styles.speechError}>{speechError}</Text>
+            ) : null}
+
+            {showTranscript && (
+              <View style={styles.transcriptCard}>
+                <Text style={styles.transcriptLabel}>TRANSCRIPT</Text>
+
+                <Text style={styles.transcriptText}>
+                  {command || "Your speech will appear here."}
+                </Text>
+              </View>
+            )}
 
             <View style={styles.inputSection}>
               <Text style={styles.inputLabel}>TYPE A COMMAND</Text>
@@ -258,10 +392,12 @@ export default function SessionScreen() {
 }
 
 function parseRestockCommand(command: string) {
-  const cleaned = command.trim();
+  const cleaned = command
+    .trim()
+    .replace(/[.,!?]/g, "");
 
   const match = cleaned.match(
-    /^(?:set\s+)?(.+?)\s+(?:count\s+)?(?:to\s+)?(\d+)$/i
+    /^(?:set\s+)?(.+?)\s+(?:count\s+)?(?:to\s+)?([a-z-]+(?:\s+[a-z-]+)?|\d+)$/i
   );
 
   if (!match) {
@@ -269,9 +405,9 @@ function parseRestockCommand(command: string) {
   }
 
   const product = capitalizeWords(match[1]);
-  const count = Number(match[2]);
+  const count = parseSpokenNumber(match[2]);
 
-  if (!product || !Number.isFinite(count)) {
+  if (!product || count === null) {
     return null;
   }
 
@@ -279,6 +415,69 @@ function parseRestockCommand(command: string) {
     product,
     count,
   };
+}
+
+function parseSpokenNumber(value: string): number | null {
+  const normalized = value.toLowerCase().trim();
+
+  if (/^\d+$/.test(normalized)) {
+    return Number(normalized);
+  }
+
+  const numberWords: Record<string, number> = {
+    zero: 0,
+    one: 1,
+    two: 2,
+    three: 3,
+    four: 4,
+    five: 5,
+    six: 6,
+    seven: 7,
+    eight: 8,
+    nine: 9,
+    ten: 10,
+    eleven: 11,
+    twelve: 12,
+    thirteen: 13,
+    fourteen: 14,
+    fifteen: 15,
+    sixteen: 16,
+    seventeen: 17,
+    eighteen: 18,
+    nineteen: 19,
+    twenty: 20,
+    thirty: 30,
+    forty: 40,
+    fifty: 50,
+    sixty: 60,
+    seventy: 70,
+    eighty: 80,
+    ninety: 90,
+  };
+
+  if (numberWords[normalized] !== undefined) {
+    return numberWords[normalized];
+  }
+
+  const parts = normalized.split(/[\s-]+/);
+
+  if (parts.length === 2) {
+    const tens = numberWords[parts[0]];
+    const ones = numberWords[parts[1]];
+
+    if (
+      tens !== undefined &&
+      tens >= 20 &&
+      tens % 10 === 0 &&
+      ones !== undefined &&
+      ones >= 1 &&
+      ones <= 9
+    ) {
+      return tens + ones;
+    }
+  }
+
+  return null;
 }
 
 function capitalizeWords(value: string) {
@@ -442,6 +641,38 @@ const styles = StyleSheet.create({
     fontSize: 15,
     textAlign: "center",
     marginTop: 9,
+  },
+
+  speechError: {
+    color: "#C83232",
+    fontSize: 13,
+    textAlign: "center",
+    marginTop: 12,
+  },
+
+  transcriptCard: {
+    width: "100%",
+    maxWidth: 500,
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1,
+    borderColor: "#DDE4E0",
+    borderRadius: 15,
+    padding: 16,
+    marginTop: 18,
+  },
+
+  transcriptLabel: {
+    color: "#69756E",
+    fontSize: 10,
+    fontWeight: "800",
+    letterSpacing: 1.1,
+  },
+
+  transcriptText: {
+    color: "#17221D",
+    fontSize: 16,
+    lineHeight: 23,
+    marginTop: 7,
   },
 
   inputSection: {
