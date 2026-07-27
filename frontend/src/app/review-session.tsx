@@ -13,6 +13,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRestockSession } from "../context/RestockSessionContext";
+import { submitCommand } from "../services/api";
 
 export default function ReviewSessionScreen() {
   const {
@@ -77,7 +78,23 @@ export default function ReviewSessionScreen() {
     */
 
     try {
-      await new Promise((resolve) => setTimeout(resolve, 700));
+      const results = await Promise.all(
+        changes.map((change) =>
+          submitCommand(`set ${change.product.trim()} to ${change.count}`)
+        )
+      );
+
+      const failedResponse = results.find(
+        (response) => response.status !== "success"
+      );
+
+      if (failedResponse) {
+        throw new Error(
+          failedResponse.status === "needs_confirmation"
+            ? failedResponse.message
+            : failedResponse.message
+        );
+      }
 
       const submittedCount = changes.length;
 
@@ -89,10 +106,10 @@ export default function ReviewSessionScreen() {
           count: String(submittedCount),
         },
       });
-    } catch {
+    } catch (error) {
       Alert.alert(
         "Submission failed",
-        "The session could not be submitted. Please try again."
+        error instanceof Error ? error.message : "The session could not be submitted. Please try again."
       );
 
       setIsSubmitting(false);

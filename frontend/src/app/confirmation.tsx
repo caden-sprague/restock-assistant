@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { router, useLocalSearchParams } from "expo-router";
 import {
+  Alert,
   Keyboard,
   Pressable,
   StyleSheet,
@@ -10,14 +11,19 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { confirmCommand as confirmCommandApi, submitCommand as submitCommandApi } from "../services/api";
+
 export default function ConfirmationScreen() {
-  const params = useLocalSearchParams<{ command?: string }>();
+  const params = useLocalSearchParams<{ command?: string; quantity?: string; siteInventoryId?: string }>();
 
   const originalCommand =
     typeof params.command === "string" ? params.command : "";
+  const quantity = Number(params.quantity ?? "0");
+  const siteInventoryId = Number(params.siteInventoryId ?? "0");
 
   const [command, setCommand] = useState(originalCommand);
   const [isEditing, setIsEditing] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const confirmationText = formatCommand(command);
   const canConfirm = command.trim().length > 0;
@@ -35,16 +41,43 @@ export default function ConfirmationScreen() {
     setIsEditing(false);
   }
 
-  function confirmCommand() {
-  if (!canConfirm) return;
+  async function confirmCommand() {
+    if (!canConfirm || isSubmitting) {
+      return;
+    }
 
-  router.push({
-    pathname: "/success",
-    params: {
-      command,
-    },
-  });
-}
+    setIsSubmitting(true);
+
+    try {
+      const response = siteInventoryId
+        ? await confirmCommandApi(siteInventoryId, quantity)
+        : await submitCommandApi(command);
+
+      if (response.status === "error") {
+        Alert.alert("Command failed", response.message);
+        return;
+      }
+
+      if (response.status === "needs_confirmation") {
+        Alert.alert("Needs confirmation", response.message);
+        return;
+      }
+
+      router.replace({
+        pathname: "/success",
+        params: {
+          count: "1",
+        },
+      });
+    } catch (error) {
+      Alert.alert(
+        "Submission failed",
+        error instanceof Error ? error.message : "Please try again."
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
 
   function goBack() {
     router.back();
@@ -153,7 +186,7 @@ export default function ConfirmationScreen() {
               disabled={!canConfirm}
             >
               <Text style={styles.confirmButtonText}>
-                Confirm
+                {isSubmitting ? "Submitting..." : "Confirm"}
               </Text>
             </Pressable>
 
