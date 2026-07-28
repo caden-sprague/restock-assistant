@@ -1,0 +1,29 @@
+CRITICAL: You are writing unit tests for CommandParser in TypeScript.
+The parser is the entry point for all user input — a missed edge case
+means bad data reaches the inventory resolver or Micromart API.
+
+### TASK ###
+Create a test file at `backend/src/services/commandParser.test.ts` and
+write comprehensive unit tests for CommandParser.parse().
+
+### CASES TO COVER ###
+- "set fairlife to 5" → { action: "correct", productQuery: "fairlife", quantity: 5 }
+- "fairlife 5" → { action: "correct", productQuery: "fairlife", quantity: 5 }
+- "correct fairlife 5" → { action: "correct", productQuery: "fairlife", quantity: 5 }
+- "make fairlife 5" → { action: "correct", productQuery: "fairlife", quantity: 5 }
+- Product name with embedded number ("fairlife 14oz 5") → quantity is 5,
+  productQuery is "fairlife 14oz"
+- Float quantity (e.g. "fairlife 5.5") → throws ParseError
+- Non-numeric quantity (e.g. "fairlife abc") → throws ParseError
+- Negative quantity (e.g. "fairlife -1") → passes through, does NOT throw ParseError
+- Empty product query → throws ParseError
+- Unrecognized pattern → throws ParseError
+- productQuery is normalized via normalizeText() before returning
+
+### REFERENCE ###
+Check commandController.test.ts for how ParseError is tested and what
+import paths the project uses.
+
+MANDATORY: Do not change commandParser.ts. Throw assertions must verify
+the error is specifically a ParseError, not a generic Error. Run typecheck
+and tests after to verify all pass.
