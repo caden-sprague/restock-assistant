@@ -1,0 +1,22 @@
+CRITICAL: You are implementing a pure utility function in TypeScript. 
+The output of this function is the foundation for ALL product name matching — 
+errors here break everything downstream.
+
+### TASK ###
+Open `backend/src/utils/normalizeText.ts`. The lowercase/trim/whitespace-collapse 
+is already implemented. Complete the remaining TODO: strip punctuation from the 
+string while preserving spaces and alphanumeric characters only.
+
+### CONSTRAINTS ###
+- No external libraries
+- Must be a pure function with no side effects
+- Input: raw string | Output: lowercase, trimmed, punctuation-stripped, 
+  whitespace-collapsed string
+- Must handle empty string and null/undefined safely
+
+### EXAMPLE BEHAVIOR ###
+"Fairlife 14oz!" → "fairlife 14oz"
+"red bull,  sugar-free" → "red bull sugarfree"
+
+MANDATORY: Do not change the function signature. Do not install any packages. 
+The function must handle empty/null input without throwing.
