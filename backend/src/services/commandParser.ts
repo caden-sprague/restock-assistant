@@ -8,9 +8,27 @@
  */
 
 import type { ParsedCommand } from "../models/parsedCommand";
+import { normalizeText } from "../utils/normalizeText";
 
 /** Thrown when text does not match a supported command pattern. */
 export class ParseError extends Error {}
+
+const DEFAULT_MESSAGE =
+    "Could not understand command. Try something like 'set fairlife to 5'.";
+
+/** Quantity is always the LAST whitespace-delimited token — this is what lets
+ * product names contain numbers (e.g. "fairlife 14oz 5"). */
+const KEYWORD_PATTERNS: ReadonlyArray<{ keyword: string; regex: RegExp }> = [
+    { keyword: "set", regex: /^set\s+(.+)\s+to\s+(\S+)$/i },
+    { keyword: "correct", regex: /^correct\s+(.+)\s+(\S+)$/i },
+    { keyword: "make", regex: /^make\s+(.+)\s+(\S+)$/i },
+];
+const RESERVED_KEYWORDS = new Set(KEYWORD_PATTERNS.map((p) => p.keyword));
+const BARE_PATTERN = /^(.+)\s+(\S+)$/;
+
+/** Integers only (optional leading "-"); the controller, not the parser,
+ * rejects negative quantities (§17 INVALID_QUANTITY). */
+const INTEGER_PATTERN = /^-?\d+$/;
 
 export class CommandParser {
     /**
@@ -21,7 +39,48 @@ export class CommandParser {
      * contain numbers (e.g. "fairlife 14oz"). Anchor quantity as the trailing
      * integer, or require a keyword.
      */
-    parse(_text: string): ParsedCommand {
-        throw new Error("Not implemented: CommandParser.parse");
+    parse(text: string): ParsedCommand {
+        const trimmed = (text ?? "").trim().replace(/\s+/g, " ");
+        if (!trimmed) {
+            throw new ParseError(DEFAULT_MESSAGE);
+        }
+
+        const firstWord = trimmed.split(" ")[0].toLowerCase();
+
+        // If the command opens with a reserved keyword, it must match that
+        // keyword's exact pattern — never fall through to the bare form,
+        // which would otherwise silently swallow the keyword into the
+        // product name (e.g. "set fairlife" from a malformed "set fairlife 5").
+        if (RESERVED_KEYWORDS.has(firstWord)) {
+            const pattern = KEYWORD_PATTERNS.find((p) => p.keyword === firstWord)!;
+            const match = pattern.regex.exec(trimmed);
+            if (!match) {
+                throw new ParseError(DEFAULT_MESSAGE);
+            }
+            return this.finish(match[1], match[2]);
+        }
+
+        const match = BARE_PATTERN.exec(trimmed);
+        if (!match) {
+            throw new ParseError(DEFAULT_MESSAGE);
+        }
+        return this.finish(match[1], match[2]);
+    }
+
+    private finish(rawProduct: string, rawQuantity: string): ParsedCommand {
+        if (!INTEGER_PATTERN.test(rawQuantity)) {
+            throw new ParseError(DEFAULT_MESSAGE);
+        }
+
+        const productQuery = normalizeText(rawProduct);
+        if (!productQuery) {
+            throw new ParseError(DEFAULT_MESSAGE);
+        }
+
+        return {
+            action: "correct",
+            productQuery,
+            quantity: parseInt(rawQuantity, 10),
+        };
     }
 }
