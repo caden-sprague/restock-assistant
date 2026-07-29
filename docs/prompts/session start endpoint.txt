@@ -1,28 +1,98 @@
-Ok, next thing I want to build is the POST /session/start endpoint on the backend. Before you write anything, read through docs/restock_assistant_mvp_plan.md — that's basically our spec, so follow the folder structure / models / naming it lays out. If something I'm asking for doesn't line up with the plan, don't just quietly do it your way, flag it and update the plan doc in the same change so they don't drift apart.
+CRITICAL: You are implementing the `POST /session/start` endpoint on the backend
+in TypeScript. This endpoint bootstraps the entire restock flow — no session
+means no planogram, and every command downstream fails. It **MUST NOT** talk to
+Micromart directly and **MUST NOT** read the auth cookie directly.
 
-This is the endpoint the mobile app hits to kick off a restock session. Quick reminder on how we're doing things on this project:
+### READ FIRST — SOURCE OF TRUTH ###
+Read `docs/restock_assistant_mvp_plan.md` before writing anything. It is the
+spec: follow its folder structure, models, and naming. If anything in this prompt
+conflicts with the plan, **flag it and update the plan doc in the same change** —
+do not silently implement the deviation and let the two drift apart.
 
-- Node + TypeScript, Fastify for the server. Keep Fastify out of the controllers/services though — it should only show up in app.ts and the route file (sessionRoutes.ts). The controller should just take a plain input object and hand back a plain response object, none of the req/reply stuff.
-- Wire everything up with constructor injection in app.ts. Nothing else should be calling new on a service.
-- Everything's in memory for now (one user, one active session at a time). No database yet, we'll deal with that later.
+### TASK ###
+Build the endpoint the mobile app hits to kick off a restock session: fetch the
+planogram, build the in-memory inventory index, and store it as the active
+session.
 
-Here's what it should actually do:
+### PROJECT CONVENTIONS ###
+- **Node + TypeScript, Fastify.** Fastify appears **only** in `app.ts` and
+  `sessionRoutes.ts`. The controller takes a plain input object and returns a
+  plain response object — no `req`/`reply` anywhere near it.
+- **Constructor injection**, wired up in `app.ts`. Nothing else calls `new` on a
+  service.
+- **In memory for now** — one user, one active session at a time. No database.
 
-The body is optional. It can have siteId and/or restockSessionId, but if either one is missing or blank just fall back to the defaults from the env vars. Trim them too, and if someone sends a whitespace-only string treat it like it wasn't there.
+### REQUEST BODY — OPTIONAL, WITH ENV FALLBACK ###
+The body may carry `siteId` and/or `restockSessionId`.
+- Missing or blank → fall back to the env var defaults.
+- **Trim** both values.
+- A whitespace-only string is treated as **not provided**.
 
-When a session starts: go fetch the planogram from Micromart for that site, build the in-memory inventory index off of it, and save it as the active session (site id, restock session id, the index, and a startedAt timestamp).
+### WHAT HAPPENS ON START ###
+1. Fetch the planogram from Micromart for that site.
+2. Build the in-memory inventory index from it.
+3. Save the active session: site id, restock session id, the index, and a
+   `startedAt` timestamp.
 
-Really important thing here — this endpoint should never talk to Micromart directly. It goes through a PlanogramService, which calls the MicromartClient, and the client is the only thing that knows the real Micromart URLs and payloads. Auth comes from the AuthProvider interface, so don't go reading the cookie directly anywhere.
+### CRITICAL — LAYERING ###
+This endpoint **NEVER** talks to Micromart directly. It goes:
 
-If it works, return something like { status: "ready", siteId, restockSessionId, itemCount }, where itemCount is just how many items ended up in the index.
+```
+SessionController → SessionService → PlanogramService → MicromartClient
+```
 
-For errors — everything we return has a status, and errors also carry a code. When Micromart fails we throw a typed MicromartError that already has the right code on it (expired cookie is AUTH_EXPIRED, some other bad response is PLANOGRAM_FETCH_FAILED, couldn't connect at all is NETWORK_ERROR). The controller should just pass that code straight through into the error response, don't go string-matching the error messages. And if something genuinely unexpected blows up (an actual bug), don't catch it and turn it into a fake code — let it bubble up to the app-level handler.
+`MicromartClient` is the **only** module that knows real Micromart URLs and
+payloads. Auth comes from the **`AuthProvider` interface** — do not read the
+cookie directly anywhere.
 
-Rough breakdown of the pieces I'm expecting:
-- SessionService — owns the active session. startSession(siteId, restockSessionId), getActive(), and getActiveIndex() which throws SESSION_NOT_READY if there's no session yet.
-- SessionController — the framework-agnostic handler. Does the env-default fallback, calls the service, maps MicromartError to the error response.
-- sessionRoutes.ts — thin Fastify wrapper: read the body, call the controller, set the HTTP status from our shared status-mapping helper (we keep the body-to-status mapping in one place so all the routes agree).
+### SUCCESS RESPONSE ###
+```
+{ status: "ready", siteId, restockSessionId, itemCount }
+```
+`itemCount` is how many items ended up in the index.
 
-Throw in some logging around session start and any failures, but that's the dev/diagnostic log, not the audit log — keep those two separate. And obviously never log the auth cookie.
+### ERROR HANDLING ###
+Every response carries a `status`; errors also carry a `code`. Micromart failures
+throw a typed `MicromartError` that **already has the right code on it**:
 
-Keep it all properly typed. And write some unit tests for the controller with a faked SessionService — I want the env fallback covered (empty body, values given, trimming, whitespace-only, only one field set), the ready response including itemCount, the case where a MicromartError maps to the right code, and the case where an unexpected error just propagates instead of getting swallowed.
+```
+expired cookie      → AUTH_EXPIRED
+other bad response  → PLANOGRAM_FETCH_FAILED
+could not connect   → NETWORK_ERROR
+```
+
+- The controller **passes that code straight through**. Do **NOT** string-match
+  error messages.
+- If something genuinely unexpected blows up (a real bug), **do not** catch it
+  and invent a fake code — let it bubble up to the app-level handler.
+
+### PIECES EXPECTED ###
+- **`SessionService`** — owns the active session. `startSession(siteId,
+  restockSessionId)`, `getActive()`, and `getActiveIndex()` which throws
+  `SESSION_NOT_READY` when there is no session yet.
+- **`SessionController`** — framework-agnostic handler. Does the env-default
+  fallback, calls the service, maps `MicromartError` to the error response.
+- **`sessionRoutes.ts`** — thin Fastify wrapper: read the body, call the
+  controller, set the HTTP status from the **shared status-mapping helper** (the
+  body-to-status mapping lives in one place so all routes agree).
+
+### LOGGING ###
+Log around session start and any failures — this is the **dev/diagnostic** log,
+kept **separate** from the audit log. **Never log the auth cookie.**
+
+### TESTS ###
+Unit-test the controller with a faked `SessionService`:
+- Env fallback: empty body, values given, trimming, whitespace-only, only one
+  field set.
+- The `ready` response includes `itemCount`.
+- A `MicromartError` maps to the right code.
+- An unexpected error **propagates** instead of getting swallowed.
+
+### MANDATORY — RE-READ BEFORE YOU SUBMIT ###
+- **Read the plan doc first**; flag and update it on any real deviation.
+- **Never call Micromart from the controller** — go through `PlanogramService` →
+  `MicromartClient`. **Never read the cookie directly** — use `AuthProvider`.
+- **Fastify only in `app.ts` and `sessionRoutes.ts`.** Constructor injection only.
+- **Pass `MicromartError` codes through**; never string-match messages; never
+  swallow unexpected errors.
+- **Never log the auth cookie.** Keep it all properly typed.

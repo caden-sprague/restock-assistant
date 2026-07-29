@@ -1,51 +1,69 @@
-I am building a real MVP for a mobile restocking assistant for Micromart vending/restock workflows. The app is not just a school-only prototype, but it will also be submitted for a software engineering class where the professor wants to see scale and architecture.
+CRITICAL: You are producing the authoritative MVP plan for a mobile restocking
+assistant built on Micromart vending/restock workflows. This is a **real MVP**,
+not a school-only prototype — it is also submitted for a software engineering
+class where the professor wants to see **scale and architecture**. Keep the tone
+practical and implementation-focused; every section must be something a developer
+can build from.
 
-The core workflow is:
+### TASK ###
+Generate a detailed **Markdown** MVP plan covering the 24 sections listed below,
+plus a 3-person work split.
 
+### CORE WORKFLOW ###
 1. A restocker manually starts a restock session at a kiosk.
-2. For the MVP, assume we manually obtain and hardcode the needed Micromart auth cookie/session, `site_id`, and `restock_session_id`.
-3. The backend uses the hardcoded auth/session to request the Micromart planogram:
-   `GET https://classic.micromart.com/api/sites/{site_id}/planogram`
+2. For the MVP, assume the Micromart auth cookie/session, `site_id`, and
+   `restock_session_id` are **manually obtained and hardcoded**.
+3. The backend uses that hardcoded auth/session to request the planogram:
+   ```
+   GET https://classic.micromart.com/api/sites/{site_id}/planogram
+   ```
 4. From the planogram, extract products from `cells[].site_inventory`, especially:
-
-   * `site_inventory.id`
-   * `site_inventory.inventory.recipe.name`
-   * quantity and any useful metadata
+   - `site_inventory.id`
+   - `site_inventory.inventory.recipe.name`
+   - quantity and any useful metadata
 5. The mobile app lets the restocker enter commands like:
-
-   * “set fairlife to 5”
-   * “fairlife 5”
-   * “correct fairlife 5”
-6. The backend parses the command, resolves the product name against the planogram, finds the correct `site_inventory_id`, and posts a restock correction event:
-   `POST https://classic.micromart.com/api/restocks/{restock_session_id}/events`
-   with a payload like:
-   `{ "type": "correct", "quantity": 5, "site_inventory_id": 294450 }`
-7. If the product name is ambiguous, such as multiple Fairlife products, the backend should return a clarification response like “Which item did you mean?” and the mobile app should show the options.
+   - "set fairlife to 5"
+   - "fairlife 5"
+   - "correct fairlife 5"
+6. The backend parses the command, resolves the product name against the
+   planogram, finds the correct `site_inventory_id`, and posts a correction event:
+   ```
+   POST https://classic.micromart.com/api/restocks/{restock_session_id}/events
+   { "type": "correct", "quantity": 5, "site_inventory_id": 294450 }
+   ```
+7. If the product name is **ambiguous** (e.g. multiple Fairlife products), the
+   backend returns a clarification response — "Which item did you mean?" — and
+   the app shows the options.
 8. The app loops until the restocker is done.
 
-Use this stack:
+### STACK ###
+- **Frontend:** React Native / Expo / TypeScript
+- **Backend:** Node.js / TypeScript using Express or Fastify
+- **External API:** Micromart REST endpoints
+- **Auth for MVP:** hardcoded cookie/session via environment variables
+- **User model for MVP:** single user, one active restock session
 
-* Frontend: React Native / Expo / TypeScript
-* Backend: Node.js / TypeScript using Express or Fastify
-* External API: Micromart REST endpoints
-* Auth for MVP: hardcoded cookie/session through environment variables
-* User model for MVP: single user, one active restock session
+### CRITICAL ARCHITECTURE DECISIONS ###
+- The mobile app **stays thin**.
+- The mobile app talks **only to our backend**, never directly to Micromart.
+- The backend owns Micromart auth, planogram fetching, command parsing, product
+  resolution, restock event submission, validation, error handling, and logging.
+- Abstract auth behind an **`AuthProvider`** so the hardcoded cookie can later be
+  replaced with real username/password login and possibly 2FA.
+- Keep Micromart-specific endpoints inside a **`MicromartClient`**.
+- Keep product matching in a separate **`InventoryResolver`** (a "Command +
+  Inventory Resolver Service").
+- **Do NOT reduce the planogram to `{ name: siteId }`.** Keep a rich inventory
+  model: `siteInventoryId`, display name, normalized name, aliases, recipe ID,
+  cell position, and other useful fields.
+- The resolver must support exact matches, aliases, contains/includes matches,
+  fuzzy matching, ambiguous-match detection, and not-found responses.
+- Add **audit logging** for attempted corrections.
+- Handle errors for: expired auth, failed planogram fetch, invalid command,
+  invalid quantity, product not found, ambiguous product, failed Micromart POST,
+  and missing session.
 
-Important architecture decisions:
-
-* The mobile app should stay thin.
-* The mobile app should only talk to our backend, not directly to Micromart.
-* The backend owns Micromart auth, planogram fetching, command parsing, product resolution, restock event submission, validation, error handling, and logging.
-* Abstract auth behind an `AuthProvider` so the hardcoded cookie can later be replaced with real username/password login and possibly 2FA.
-* Keep Micromart-specific endpoints inside a `MicromartClient`.
-* Keep the product matching logic in a separate `InventoryResolver` or “Command + Inventory Resolver Service.”
-* Do not reduce the planogram to only `{ name: siteId }`; keep a richer inventory model with `siteInventoryId`, display name, normalized name, aliases, recipe ID, cell position, and other useful fields.
-* The product resolver should support exact matches, aliases, contains/includes matches, fuzzy matching, ambiguous-match detection, and not-found responses.
-* Add audit logging for attempted corrections.
-* Include error handling for expired auth, failed planogram fetch, invalid command, invalid quantity, product not found, ambiguous product, failed Micromart POST, and missing session.
-
-Please generate a detailed Markdown MVP plan that includes:
-
+### REQUIRED SECTIONS — ALL 24 ###
 1. Project summary
 2. MVP assumptions
 3. High-level architecture diagram
@@ -71,10 +89,18 @@ Please generate a detailed Markdown MVP plan that includes:
 23. Key architecture principle
 24. Recommended build order
 
-Also include a suggested 3-person work split:
+### WORK SPLIT ###
+Include a suggested 3-person split:
+- **Person 1:** Backend / Micromart Integration
+- **Person 2:** Mobile App / Frontend
+- **Person 3:** Command + Inventory Resolver Service
 
-* Person 1: Backend / Micromart Integration
-* Person 2: Mobile App / Frontend
-* Person 3: Command + Inventory Resolver Service
-
-Keep the tone practical and implementation-focused. Assume we want to build a working MVP, not just describe a theoretical school project.
+### MANDATORY — RE-READ BEFORE YOU SUBMIT ###
+- Output **Markdown**, covering **all 24 sections** plus the 3-person work split.
+- **Keep the rich inventory model** — never collapse the planogram to
+  `{ name: siteId }`.
+- **The app never calls Micromart directly**; `MicromartClient` is the only
+  module that knows Micromart endpoints, and auth goes through `AuthProvider`.
+- Cover **every** listed error case and the audit logging requirement.
+- Practical and implementation-focused — assume we are building a working MVP,
+  not describing a theoretical school project.

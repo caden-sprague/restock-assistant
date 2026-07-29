@@ -1,29 +1,118 @@
-Alright, moving on to the command endpoints — this is the part the app calls when someone types a command like "set fairlife to 5". Same deal as before, read the plan doc first, it's the source of truth. If I ask for something that actually conflicts with it (models, contract, error codes, naming), check with me and update the plan in the same change instead of letting them drift apart.
+CRITICAL: You are implementing the command endpoints (`POST /commands` and
+`POST /commands/confirm`) on the backend in TypeScript. This is the path that
+writes real inventory corrections to Micromart — a wrong order of operations here
+submits bad data. The `CommandController` **MUST only orchestrate**: it never
+parses, matches, or submits itself.
 
-There are two endpoints here:
-- POST /commands — takes the raw command text and runs the whole flow.
-- POST /commands/confirm — this is the follow-up after an ambiguous match, takes the item id + quantity the user picked.
+### READ FIRST — SOURCE OF TRUTH ###
+Read `docs/restock_assistant_mvp_plan.md` before writing anything. If something
+here conflicts with it (models, contract, error codes, naming), **check first and
+update the plan in the same change** rather than letting the two drift apart.
 
-Conventions are the same as the rest of the backend: TypeScript + Fastify, Fastify only in app.ts and the route file (commandRoutes.ts), controllers/services stay framework-agnostic, everything injected through constructors and wired up in app.ts. One thing I really care about here — the CommandController should only orchestrate. It shouldn't be doing the parsing, matching, or submitting itself, it just sequences the collaborators: parse (CommandParser) → resolve (InventoryResolver) → submit (RestockService). Depend on their interfaces, not the guts.
+### TASK ###
+Build two endpoints:
+- **`POST /commands`** — takes the raw command text and runs the whole flow.
+- **`POST /commands/confirm`** — the follow-up after an ambiguous match; takes
+  the item id + quantity the user picked.
 
-What /commands should do, in order:
+### PROJECT CONVENTIONS ###
+- TypeScript + Fastify. **Fastify only in `app.ts` and `commandRoutes.ts`.**
+  Controllers and services stay framework-agnostic.
+- Everything injected through constructors and wired up in `app.ts`.
+- **The controller only sequences collaborators**, depending on their interfaces,
+  not their guts:
 
-1. If there's no active session, bail immediately with SESSION_NOT_READY. A command means nothing without a planogram to resolve against, so check this first before anything else happens.
-2. Parse the text into a ParsedCommand (action, productQuery, quantity). If the parser throws its ParseError, return UNPARSEABLE_COMMAND with a friendly message, something like "Try something like 'set fairlife to 5'". If it throws anything else that's a real bug, so let it propagate.
-3. Check the quantity before you resolve — I don't want an ambiguous result coming back carrying a bad quantity. Has to be a non-negative integer, otherwise INVALID_QUANTITY.
-4. Resolve the productQuery against the active index. The resolver is layered (exact → alias → contains → fuzzy) and hands back one of three things:
-   - nothing found → PRODUCT_NOT_FOUND, and mention what they actually typed.
-   - multiple decent matches → return needs_confirmation with the options as minimal { name, siteInventoryId } refs (don't leak the full internal item out to the app) plus the quantity, and don't submit anything.
-   - one match → submit it.
-5. Submitting goes through RestockService — it builds the { type: "correct", quantity, site_inventory_id } payload and posts it via MicromartClient. Just return whatever it gives back (a success with the item + quantity, or a mapped MicromartError).
+```
+parse (CommandParser) → resolve (InventoryResolver) → submit (RestockService)
+```
 
-For /commands/confirm:
-The body is { siteInventoryId, quantity } that the user picked after a needs_confirmation, so there's no text to parse this time. But don't just trust it. Run it back through the same RestockService.submit path so it re-checks everything anyway: active session, valid quantity, and that the siteInventoryId is actually a real item in the current session's planogram (PRODUCT_NOT_FOUND if it isn't). Then submit.
+### /commands — EXECUTE IN THIS ORDER ###
+1. **No active session → `SESSION_NOT_READY`, immediately.** A command means
+   nothing without a planogram to resolve against, so check this **first**,
+   before anything else happens.
+2. **Parse** the text into a `ParsedCommand` (action, productQuery, quantity).
+   - Parser throws `ParseError` → return `UNPARSEABLE_COMMAND` with a friendly
+     message, e.g. *"Try something like 'set fairlife to 5'"*.
+   - Parser throws **anything else** → that's a real bug, **let it propagate**.
+3. **Validate the quantity BEFORE resolving** — an ambiguous result must never
+   come back carrying a bad quantity. Must be a **non-negative integer**,
+   otherwise `INVALID_QUANTITY`.
+4. **Resolve** the productQuery against the active index. The resolver is layered
+   (exact → alias → contains → fuzzy) and returns one of three things:
+   - **nothing found** → `PRODUCT_NOT_FOUND`, and mention what they actually typed.
+   - **multiple matches** → return `needs_confirmation` with the options as
+     minimal `{ name, siteInventoryId }` refs (**do not leak the full internal
+     item to the app**) plus the quantity, and **submit nothing**.
+   - **one match** → submit it.
+5. **Submit** via `RestockService`, which builds the payload and posts it through
+   `MicromartClient`:
 
-On the contract and errors: every response has a status (success | error | needs_confirmation) and every error has a code. Pass the MicromartError codes straight through (AUTH_EXPIRED / MICROMART_POST_FAILED / NETWORK_ERROR). And keep one shared helper that maps a response body to its HTTP status so all the routes stay consistent.
+```
+{ "type": "correct", "quantity": 5, "site_inventory_id": 294450 }
+```
+   Return whatever it gives back — a success with the item + quantity, or a
+   mapped `MicromartError`.
 
-Also add JSON-schema validation on both route bodies (Fastify has this built in) so a malformed request gets a clean 400 instead of exploding somewhere inside a handler. Keep the schema to structure only — /commands needs a string text, /commands/confirm needs an integer siteInventoryId and a number quantity. Reject unknown fields and don't let it coerce types (a string "5" is not a number). Leave the actual semantic rules in the services — the non-negative-integer quantity check is INVALID_QUANTITY, an id that's well-formed but not in the planogram is PRODUCT_NOT_FOUND — so we're not checking the same thing in two places. A schema failure should come back as its own INVALID_REQUEST code, so add that to the error codes and the status map.
+### /commands/confirm ###
+Body is `{ siteInventoryId, quantity }` the user picked after a
+`needs_confirmation`, so there is no text to parse. **Do not trust it.** Run it
+back through the same `RestockService.submit` path so everything is re-checked:
+- active session,
+- valid quantity,
+- the `siteInventoryId` is **actually a real item in the current session's
+  planogram** (`PRODUCT_NOT_FOUND` if it is not).
 
-And audit logging: log every attempted correction, doesn't matter if it succeeded, errored, or needs confirmation. That's the business audit log, separate from the dev log.
+Then submit.
 
-Keep everything typed. Then write controller unit tests with all the collaborators faked (parser, resolver, restock, session, audit) so we're only testing the orchestration and not the parsing/matching/submitting itself: no session → SESSION_NOT_READY and nothing submitted; ParseError → UNPARSEABLE_COMMAND; a non-ParseError propagates; negative and non-integer quantities → INVALID_QUANTITY with the resolver never getting called; not_found → PRODUCT_NOT_FOUND; ambiguous → needs_confirmation with the mapped options and no submit; single → submit called with the right id and quantity. Include any other tests that seem missing.
+### CONTRACT AND ERROR CODES ###
+Every response has a `status` (`success` | `error` | `needs_confirmation`) and
+every error has a `code`. Pass `MicromartError` codes **straight through**:
+
+```
+AUTH_EXPIRED / MICROMART_POST_FAILED / NETWORK_ERROR
+```
+
+Keep **one shared helper** mapping a response body to its HTTP status so all
+routes stay consistent.
+
+### REQUEST SCHEMA VALIDATION ###
+Add Fastify JSON-schema validation on **both** route bodies so a malformed
+request gets a clean 400 instead of exploding inside a handler.
+- **Structure only**: `/commands` needs a string `text`; `/commands/confirm`
+  needs an integer `siteInventoryId` and a number `quantity`.
+- **Reject unknown fields.** **Do not coerce types** — a string `"5"` is not a
+  number.
+- **Semantic rules stay in the services** — the non-negative-integer check is
+  `INVALID_QUANTITY`, a well-formed id that is not in the planogram is
+  `PRODUCT_NOT_FOUND`. Do not check the same thing in two places.
+- A schema failure returns its own **`INVALID_REQUEST`** code — add it to the
+  error codes and the status map.
+
+### AUDIT LOGGING ###
+Log **every** attempted correction — succeeded, errored, or needs confirmation.
+This is the **business audit log**, separate from the dev log.
+
+### TESTS ###
+Controller unit tests with **all** collaborators faked (parser, resolver,
+restock, session, audit) so only orchestration is under test:
+- no session → `SESSION_NOT_READY`, nothing submitted
+- `ParseError` → `UNPARSEABLE_COMMAND`
+- a non-`ParseError` **propagates**
+- negative and non-integer quantities → `INVALID_QUANTITY`, **resolver never called**
+- `not_found` → `PRODUCT_NOT_FOUND`
+- `ambiguous` → `needs_confirmation` with mapped options, **no submit**
+- `single` → submit called with the right id and quantity
+
+Add any other tests that seem missing.
+
+### MANDATORY — RE-READ BEFORE YOU SUBMIT ###
+- **Read the plan doc first**; confirm and update it on any real deviation.
+- **The controller orchestrates only** — no parsing, matching, or submitting in
+  it. Depend on interfaces.
+- **Session check first, quantity check before resolve.** Never resolve or submit
+  on a bad quantity.
+- **Never leak the full internal item** — confirmation options are
+  `{ name, siteInventoryId }` only.
+- **Pass `MicromartError` codes straight through**; let non-`ParseError` throws
+  propagate.
+- **Audit-log every attempted correction.** Keep everything typed.
