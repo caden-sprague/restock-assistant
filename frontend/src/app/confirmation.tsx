@@ -11,6 +11,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import CommandAmbiguityModal from "../components/command-ambiguity-modal";
 import { confirmCommand as confirmCommandApi, submitCommand as submitCommandApi } from "../services/api";
 
 export default function ConfirmationScreen() {
@@ -18,12 +19,14 @@ export default function ConfirmationScreen() {
 
   const originalCommand =
     typeof params.command === "string" ? params.command : "";
-  const quantity = Number(params.quantity ?? "0");
-  const siteInventoryId = Number(params.siteInventoryId ?? "0");
 
   const [command, setCommand] = useState(originalCommand);
   const [isEditing, setIsEditing] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [pendingAmbiguity, setPendingAmbiguity] = useState<null | {
+    options: Array<{ name: string; siteInventoryId: number }>;
+    quantity: number;
+  }>(null);
 
   const confirmationText = formatCommand(command);
   const canConfirm = command.trim().length > 0;
@@ -49,9 +52,7 @@ export default function ConfirmationScreen() {
     setIsSubmitting(true);
 
     try {
-      const response = siteInventoryId
-        ? await confirmCommandApi(siteInventoryId, quantity)
-        : await submitCommandApi(command);
+      const response = await submitCommandApi(command);
 
       if (response.status === "error") {
         Alert.alert("Command failed", response.message);
@@ -59,7 +60,10 @@ export default function ConfirmationScreen() {
       }
 
       if (response.status === "needs_confirmation") {
-        Alert.alert("Needs confirmation", response.message);
+        setPendingAmbiguity({
+          options: response.options,
+          quantity: response.quantity,
+        });
         return;
       }
 
@@ -85,6 +89,48 @@ export default function ConfirmationScreen() {
 
   function endSession() {
     router.replace("/");
+  }
+
+  async function handleAmbiguitySelection(siteInventoryId: number) {
+    const pending = pendingAmbiguity;
+
+    if (!pending) {
+      return;
+    }
+
+    setPendingAmbiguity(null);
+    setIsSubmitting(true);
+
+    try {
+      const response = await confirmCommandApi(siteInventoryId, pending.quantity);
+
+      if (response.status === "error") {
+        Alert.alert("Command failed", response.message);
+        return;
+      }
+
+      if (response.status === "needs_confirmation") {
+        setPendingAmbiguity({
+          options: response.options,
+          quantity: response.quantity,
+        });
+        return;
+      }
+
+      router.replace({
+        pathname: "/success",
+        params: {
+          count: "1",
+        },
+      });
+    } catch (error) {
+      Alert.alert(
+        "Submission failed",
+        error instanceof Error ? error.message : "Please try again."
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   return (
@@ -203,6 +249,14 @@ export default function ConfirmationScreen() {
             </Pressable>
           </View>
         </View>
+
+        <CommandAmbiguityModal
+          visible={pendingAmbiguity !== null}
+          options={pendingAmbiguity?.options ?? []}
+          quantity={pendingAmbiguity?.quantity ?? 0}
+          onSelect={handleAmbiguitySelection}
+          onCancel={() => setPendingAmbiguity(null)}
+        />
       </View>
     </SafeAreaView>
   );
