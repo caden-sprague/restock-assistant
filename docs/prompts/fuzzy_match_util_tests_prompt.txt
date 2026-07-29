@@ -1,0 +1,26 @@
+CRITICAL: You are writing unit tests for the fuzzyScore utility in TypeScript.
+This is the last-resort matching layer — incorrect scores mean products either
+fail to match when they should or match when they shouldn't.
+
+### TASK ###
+Create a test file at `backend/src/utils/fuzzyMatch.test.ts` and write
+comprehensive unit tests for fuzzyScore().
+
+### CASES TO COVER ###
+- Both strings empty → returns 1
+- One string empty → returns 0
+- Identical strings → returns 1
+- One character difference → score close to 1
+- Completely different strings → score close to 0
+- "fairlif" vs "fairlife" → score above 0.6 threshold
+- Short gibberish vs real word → score below 0.6 threshold
+- Score is always between 0 and 1 inclusive
+- Inputs are not mutated
+- No normalization happens inside fuzzyScore —
+  "Fairlife" vs "fairlife" should NOT be treated as identical
+
+### REFERENCE ###
+Look at existing test files for correct test runner syntax and import paths.
+
+MANDATORY: Do not change fuzzyMatch.ts. Every test must assert the return
+value is a number in [0,1]. Run typecheck and tests after to verify all pass.
