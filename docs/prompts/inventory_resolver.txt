@@ -1,0 +1,39 @@
+CRITICAL: You are implementing InventoryResolver.resolve(query, index) in TypeScript.
+This is the core intelligence of the app. It MUST implement layered matching in 
+strict order and MUST never return a single match when the result is actually ambiguous.
+
+### TASK ###
+Open `backend/src/services/inventoryResolver.ts` and implement resolve().
+
+### MATCHING LAYERS — execute in this exact order, stop at first hit ###
+1. Exact match on normalizedName
+2. Alias match (check item.aliases[])
+3. Contains/includes match (normalizedName includes query OR query includes normalizedName)
+4. Fuzzy match via fuzzyScore() from utils/fuzzyMatch.ts
+
+### RETURN TYPE: ResolveResult ###
+Use the existing ResolveResult shape already defined in the file — do NOT rename 
+or restructure it. The existing shape is:
+{ kind: "single"; item: InventoryItem }
+{ kind: "ambiguous"; options: InventoryItem[] }
+{ kind: "not_found" }
+
+### CRITICAL RULES ###
+- Normalize the query with normalizeText() before any comparison
+- If multiple items match at the same layer → return ambiguous, do NOT pick one
+- Only advance to the next layer if current layer returns zero matches
+- Fuzzy layer: use a threshold score of 0.6 — items below threshold are not_found.
+  Keep the threshold constant in this file, not inside fuzzyMatch.ts
+- Never return single if candidates.length > 1
+- Note: fuzzyScore() in utils/fuzzyMatch.ts may still be a stub at this point.
+  Wire it up correctly — it will be implemented in the next step. The fuzzy 
+  layer will only be reached at runtime once fuzzyMatch.ts is complete.
+
+### REFERENCE ###
+Check `commandController.test.ts` for the ambiguous case example:
+"fairlife" matching Fairlife Chocolate/Vanilla/Strawberry → must return 
+kind: "ambiguous" with options array.
+
+MANDATORY: Query must be normalized before matching. Use kind/options/item — 
+do not change the existing ResolveResult shape. Ambiguous must always be 
+returned when 2+ items match. Do not skip layers or combine them.

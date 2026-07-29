@@ -1,0 +1,33 @@
+CRITICAL: You are implementing fuzzyScore(a: string, b: string): number in TypeScript.
+This is the last-resort matching layer — it must be fast, have no external 
+dependencies, and return a normalized score between 0 and 1.
+
+### TASK ###
+Open `backend/src/utils/fuzzyMatch.ts` and implement fuzzyScore().
+
+### REQUIREMENTS ###
+- Return a number between 0 (no match) and 1 (perfect match)
+- Use Levenshtein edit distance as the basis for scoring
+- Score formula: 1 - (editDistance / maxLength)
+- Both inputs are pre-normalized before this function is called —
+  do NOT call normalizeText() inside fuzzyScore. Keep it pure, inputs 
+  are the caller's responsibility.
+- The match threshold (0.6) lives in InventoryResolver, not here — 
+  do not hardcode it inside fuzzyMatch.ts
+
+### EDGE CASES ###
+- Both strings empty → return 1
+- One string empty → return 0
+- Identical strings → return 1
+
+### NO EXTERNAL LIBRARIES ###
+Implement Levenshtein with a standard 2-row DP approach for memory efficiency.
+O(n*m) time, O(min(n,m)) space.
+
+### VERIFY ###
+After implementing, re-run the full resolver flow end-to-end to confirm the 
+fuzzy layer now works correctly — a typo like "fairlif" should resolve to 
+"fairlife" as a single match, and a nonsense query should return not_found.
+
+MANDATORY: No imports. Pure function only. Must return a number in [0,1]. 
+Do not mutate inputs. Do not hardcode the threshold.

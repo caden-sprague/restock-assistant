@@ -1,0 +1,33 @@
+CRITICAL: You are implementing CommandParser.parse(text: string) in TypeScript. 
+This function MUST correctly handle all 4 command forms and throw ParseError 
+on anything invalid — a wrong parse silently corrupts inventory data.
+
+### TASK ###
+Open `backend/src/services/commandParser.ts` and implement the parse() method 
+stub. Read the docstring and edge case notes already in the file before writing 
+any code.
+
+### COMMAND FORMS TO SUPPORT ###
+1. "set fairlife to 5"
+2. "fairlife 5"  
+3. "correct fairlife 5"
+4. "make fairlife 5"
+
+### RETURN SHAPE ###
+ParsedCommand = { action: "correct"; productQuery: string; quantity: number }
+
+### CRITICAL EDGE CASES ###
+- Quantity MUST be numeric and parseable as an integer — reject non-numeric and 
+  floats only. Do NOT reject negatives here, the controller handles that separately.
+- Product names may contain numbers (e.g. "fairlife 14oz") — quantity must be 
+  anchored as trailing integer or after keyword, not just any number in the string
+- Empty product query after parsing → throw ParseError
+- Unrecognized pattern → throw ParseError
+
+### REFERENCE ###
+Check `commandController.test.ts` — it fakes this function and shows exactly 
+what parse() must return for each command form.
+
+MANDATORY: Use normalizeText() from utils on the productQuery before returning. 
+Throw ParseError (not generic Error) on all failure cases. Do not change the 
+return type.

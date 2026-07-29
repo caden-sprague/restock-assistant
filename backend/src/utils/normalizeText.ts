@@ -8,11 +8,15 @@
  */
 
 /**
- * Lowercase, trim, collapse internal whitespace. Basic form implemented; the
- * punctuation-stripping decision (§14 "optionally remove punctuation") is left
- * as a TODO for Joel so it stays intentional.
+ * Lowercase, strip punctuation (keeping only alphanumerics and whitespace),
+ * collapse internal whitespace, and trim. Punctuation is removed rather than
+ * replaced with a space, so "sugar-free" normalizes to "sugarfree".
  */
 export function normalizeText(input: string): string {
-    return input.trim().toLowerCase().replace(/\s+/g, " ");
-    // TODO(Joel): decide on punctuation stripping (e.g. "14oz" vs "14 oz").
+    if (input == null) return "";
+    return input
+        .toLowerCase()
+        .replace(/[^a-z0-9\s]/g, "")
+        .replace(/\s+/g, " ")
+        .trim();
 }

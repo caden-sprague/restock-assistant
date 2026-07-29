@@ -1,0 +1,29 @@
+CRITICAL: You are writing unit tests for InventoryIndexService in TypeScript.
+This service transforms the raw Micromart planogram into the index that all
+product matching depends on — a bad build means nothing resolves correctly.
+
+### TASK ###
+Create a test file at `backend/src/services/inventoryIndexService.test.ts`
+and write comprehensive unit tests for InventoryIndexService.build().
+
+### CASES TO COVER ###
+- Valid planogram with one cell → allItems has one item with correct fields
+- siteInventoryId, displayName, normalizedName, aliases, recipeId, cellId
+  all populated correctly
+- normalizedName is the normalized version of displayName
+- byId map contains the item keyed by siteInventoryId
+- byName map contains the item keyed by normalizedName
+- Cell with null site_inventory → skipped, not in allItems
+- Cell with missing id → skipped
+- Cell with missing name → skipped
+- Empty cells array → returns empty index without throwing
+- Null/undefined planogram → returns empty index without throwing
+- Multiple valid cells → all appear in allItems, byId, byName
+
+### REFERENCE ###
+Look at the InventoryItem model and InventoryIndex type definitions
+before writing the test data shapes.
+
+MANDATORY: Do not change inventoryIndexService.ts. Use realistic planogram
+shaped test data matching cells[].site_inventory structure. Run typecheck
+and tests after to verify all pass.

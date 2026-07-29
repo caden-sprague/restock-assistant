@@ -1,0 +1,26 @@
+CRITICAL: You are writing unit tests for the normalizeText utility in TypeScript.
+Every downstream matching function depends on this — untested edge cases here
+will silently break the entire product resolution pipeline.
+
+### TASK ###
+Create a test file at `backend/src/utils/normalizeText.test.ts` and write
+comprehensive unit tests for the normalizeText() function.
+
+### CASES TO COVER ###
+- Lowercases input
+- Trims leading and trailing whitespace
+- Collapses multiple spaces into one
+- Strips punctuation while preserving alphanumeric and spaces
+- Handles empty string → returns empty string
+- Handles null/undefined → does not throw
+- Mixed case with punctuation (e.g. "Fairlife 14oz!" → "fairlife 14oz")
+- Hyphenated words (e.g. "sugar-free" → "sugarfree")
+- Multiple punctuation types (commas, periods, exclamation marks)
+
+### REFERENCE ###
+Look at existing test files in the repo for the correct test runner
+syntax and import style before writing anything.
+
+MANDATORY: Do not change normalizeText.ts. Use the same test runner
+already configured in the project. Every case must have a descriptive
+name. Run typecheck and tests after to verify all pass.

@@ -1,0 +1,41 @@
+CRITICAL: You are implementing InventoryIndexService.build(planogram) in TypeScript.
+This transforms raw Micromart planogram JSON into the searchable InventoryIndex 
+that ALL product matching depends on — the richer the model, the better matching works.
+
+### TASK ###
+Open `backend/src/services/inventoryIndexService.ts` and implement the build() method.
+
+### PLANOGRAM INPUT SHAPE ###
+Extract from: planogram.cells[].site_inventory
+Fields to use:
+- site_inventory.id → siteInventoryId
+- site_inventory.inventory.recipe.name → displayName
+- cell position → cellId
+- quantity metadata if present
+
+### OUTPUT: InventoryIndex ###
+{
+  byId: Map<number, InventoryItem>
+  byName: Map<string, InventoryItem[]>
+  allItems: InventoryItem[]
+}
+
+### InventoryItem MUST include ###
+- siteInventoryId: number
+- displayName: string (original)
+- normalizedName: string (run through normalizeText())
+- aliases: string[] (start empty, can be populated later)
+- recipeId: string
+- cellId: string | number
+
+### CRITICAL ###
+- Use normalizeText() on displayName when building normalizedName
+- byName map should key on normalizedName for fast lookup
+- Skip any cell where site_inventory is null/undefined, id is not a usable 
+  number, or there is no usable name — an item with no name cannot be matched
+- All field access must be defensive since the real Micromart planogram shape 
+  is still marked UNVERIFIED in micromartClient.ts
+- Do NOT reduce to only { name, siteId } — keep the full rich model
+
+MANDATORY: The build() function must not throw on empty or malformed planogram —
+return an empty index instead. normalizedName must always be populated.
