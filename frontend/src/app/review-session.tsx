@@ -12,8 +12,9 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import CommandAmbiguityModal from "../components/command-ambiguity-modal";
 import { useRestockSession } from "../context/RestockSessionContext";
-import { submitCommand } from "../services/api";
+import { confirmCommand, submitCommand } from "../services/api";
 
 export default function ReviewSessionScreen() {
   const {
@@ -24,6 +25,11 @@ export default function ReviewSessionScreen() {
   } = useRestockSession();
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [pendingAmbiguity, setPendingAmbiguity] = useState<null | {
+    options: Array<{ name: string; siteInventoryId: number }>;
+    quantity: number;
+    resolve: (siteInventoryId: number | null) => void;
+  }>(null);
 
   function goBack() {
     router.back();
@@ -78,22 +84,39 @@ export default function ReviewSessionScreen() {
     */
 
     try {
-      const results = await Promise.all(
-        changes.map((change) =>
-          submitCommand(`set ${change.product.trim()} to ${change.count}`)
-        )
-      );
-
-      const failedResponse = results.find(
-        (response) => response.status !== "success"
-      );
-
-      if (failedResponse) {
-        throw new Error(
-          failedResponse.status === "needs_confirmation"
-            ? failedResponse.message
-            : failedResponse.message
+      for (const change of changes) {
+        const response = await submitCommand(
+          `set ${change.product.trim()} to ${change.count}`
         );
+
+        if (response.status === "needs_confirmation") {
+          const selectedSiteInventoryId = await new Promise<number | null>((resolve) => {
+            setPendingAmbiguity({
+              options: response.options,
+              quantity: response.quantity,
+              resolve,
+            });
+          });
+
+          if (selectedSiteInventoryId === null) {
+            throw new Error("You cancelled the item selection.");
+          }
+
+          const confirmedResponse = await confirmCommand(
+            selectedSiteInventoryId,
+            response.quantity
+          );
+
+          if (confirmedResponse.status !== "success") {
+            throw new Error(confirmedResponse.message);
+          }
+
+          continue;
+        }
+
+        if (response.status !== "success") {
+          throw new Error(response.message);
+        }
       }
 
       const submittedCount = changes.length;
@@ -111,8 +134,9 @@ export default function ReviewSessionScreen() {
         "Submission failed",
         error instanceof Error ? error.message : "The session could not be submitted. Please try again."
       );
-
+    } finally {
       setIsSubmitting(false);
+      setPendingAmbiguity(null);
     }
   }
 
@@ -305,6 +329,20 @@ export default function ReviewSessionScreen() {
             )}
           </ScrollView>
         </KeyboardAvoidingView>
+
+        <CommandAmbiguityModal
+          visible={pendingAmbiguity !== null}
+          options={pendingAmbiguity?.options ?? []}
+          quantity={pendingAmbiguity?.quantity ?? 0}
+          onSelect={(siteInventoryId) => {
+            pendingAmbiguity?.resolve(siteInventoryId);
+            setPendingAmbiguity(null);
+          }}
+          onCancel={() => {
+            pendingAmbiguity?.resolve(null);
+            setPendingAmbiguity(null);
+          }}
+        />
       </View>
     </SafeAreaView>
   );
