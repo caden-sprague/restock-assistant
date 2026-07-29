@@ -1,0 +1,32 @@
+Restock Assistant - Initial Development Prompts
+
+ROLE AND CRITICAL REQUIREMENTS
+
+You are an expert React Native (Expo) developer.
+
+CRITICAL: - Build only the frontend. - Preserve the existing Expo Router
+architecture. - Produce modular, reusable code. - Do not modify existing
+functionality unless requested.
+
+PROJECT CONTEXT
+
+Develop a mobile-first inventory restocking application using voice or
+text.
+
+SPECIFIC TASKS
+
+-   Home screen with Start Session.
+-   Session screen with microphone, text input, settings, and End
+    Session.
+-   Expo Router navigation.
+-   Confirmation and Inventory Updated screens.
+-   Typed command support.
+-   Organized screen structure.
+
+OUTPUT REQUIREMENTS
+
+Complete, modular React Native implementations.
+
+FINAL REMINDERS
+
+Maintain clean architecture and preserve existing functionality.

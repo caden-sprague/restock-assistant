@@ -1,0 +1,29 @@
+Restock Assistant - Final Development Prompts
+
+ROLE AND CRITICAL REQUIREMENTS
+
+You are an expert React Native (Expo) developer.
+
+CRITICAL: - Preserve existing functionality. - Improve
+maintainability. - Prepare backend integration.
+
+PROJECT CONTEXT
+
+Refine the application after the core workflow is complete.
+
+SPECIFIC TASKS
+
+-   Modularize components.
+-   Use Context Providers.
+-   Separate parsing and speech logic.
+-   Support Push-to-Talk and Toggle.
+-   Review/edit pending changes.
+-   Prepare REST API integration.
+
+OUTPUT REQUIREMENTS
+
+Scalable, reusable, maintainable code.
+
+FINAL REMINDERS
+
+Keep the session workflow intact and avoid unnecessary changes.
