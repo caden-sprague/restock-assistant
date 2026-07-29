@@ -1,4 +1,5 @@
 import Constants from "expo-constants";
+import { Platform } from "react-native";
 
 type SessionResponse =
   | {
@@ -48,7 +49,18 @@ function resolveApiBaseUrl() {
   const fromExpoConfig = (Constants.expoConfig?.extra as
     | { apiBaseUrl?: string }
     | undefined)?.apiBaseUrl;
-  const fromEnv = process.env.EXPO_PUBLIC_API_URL;
+
+  // Platform-specific overrides win: web (this computer) vs. native device
+  // (a different machine on the LAN). These must be referenced by their exact
+  // literal names — Expo inlines EXPO_PUBLIC_* vars at build time by matching
+  // static `process.env.EXPO_PUBLIC_FOO` accesses, so no dynamic keys.
+  const platformEnv = Platform.select({
+    web: process.env.EXPO_PUBLIC_API_URL_WEB,
+    default: process.env.EXPO_PUBLIC_API_URL_NATIVE,
+  });
+
+  // Generic override still works as a catch-all for both platforms.
+  const fromEnv = platformEnv ?? process.env.EXPO_PUBLIC_API_URL;
 
   return (fromEnv ?? fromExpoConfig ?? "http://localhost:3000").replace(/\/$/, "");
 }
