@@ -10,6 +10,7 @@
  * later is a one-line change here.
  */
 
+import cors from "@fastify/cors";
 import Fastify, {
     type FastifyInstance,
     type FastifyError,
@@ -79,6 +80,18 @@ export function createApp(env: Env): FastifyInstance {
     const app = Fastify({
         logger: false,
         ajv: { customOptions: { coerceTypes: false, removeAdditional: false } },
+    });
+
+    // CORS. The web build runs in a browser on a different origin than the
+    // backend, so it sends a preflight OPTIONS before POSTs with a JSON body;
+    // without this, that preflight 404s and the browser blocks the request.
+    // Native (iOS/Android) does not preflight, so this only affects web.
+    // `origin: true` reflects the caller's origin — fine for the single-user
+    // MVP; the frontend sends no cookies to us (Micromart auth is backend-only),
+    // so credentials stay off. Lock this down to an allowlist before prod.
+    app.register(cors, {
+        origin: true,
+        methods: ["GET", "POST", "OPTIONS"],
     });
 
     app.get("/health", async () => ({ status: "ok" }));
