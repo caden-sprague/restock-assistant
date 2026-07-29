@@ -1,0 +1,30 @@
+CRITICAL: You are writing unit tests for InventoryResolver in TypeScript.
+This is the core matching intelligence — every layer must be tested in
+isolation to guarantee the correct result is always returned.
+
+### TASK ###
+Create a test file at `backend/src/services/inventoryResolver.test.ts`
+and write comprehensive unit tests for InventoryResolver.resolve().
+
+### CASES TO COVER ###
+- Exact match on normalizedName → kind: "single"
+- Alias match → kind: "single"
+- Contains match (query inside normalizedName) → kind: "single"
+- Contains match (normalizedName inside query) → kind: "single"
+- Fuzzy match (typo like "fairlif") → kind: "single"
+- Exact collision (two items with same normalizedName) → kind: "ambiguous"
+- Multiple contains matches → kind: "ambiguous"
+- Multiple fuzzy matches above threshold → kind: "ambiguous"
+- No match at any layer → kind: "not_found"
+- Fuzzy score below 0.6 threshold → kind: "not_found"
+- Empty query → kind: "not_found"
+- Empty index → kind: "not_found"
+- Layers are strict — exact match does not fall through to fuzzy
+
+### REFERENCE ###
+Check commandController.test.ts for the ambiguous Fairlife example.
+Use kind/options/item — not type/candidates.
+
+MANDATORY: Do not change inventoryResolver.ts. Build a small test
+InventoryIndex manually for each case rather than calling
+InventoryIndexService. Run typecheck and tests after to verify all pass.
