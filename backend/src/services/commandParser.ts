@@ -19,9 +19,9 @@ const DEFAULT_MESSAGE =
 /** Quantity is always the LAST whitespace-delimited token — this is what lets
  * product names contain numbers (e.g. "fairlife 14oz 5"). */
 const KEYWORD_PATTERNS: ReadonlyArray<{ keyword: string; regex: RegExp }> = [
-    { keyword: "set", regex: /^set\s+(.+)\s+to\s+(\S+)$/i },
-    { keyword: "correct", regex: /^correct\s+(.+)\s+(\S+)$/i },
-    { keyword: "make", regex: /^make\s+(.+)\s+(\S+)$/i },
+    { keyword: "set", regex: /^set\s+(.+?)(?:\s+to\s+)?(\S+)$/i },
+    { keyword: "correct", regex: /^correct\s+(.+?)(?:\s+to\s+)?(\S+)$/i },
+    { keyword: "make",    regex: /^make\s+(.+?)(?:\s+to\s+)?(\S+)$/i }
 ];
 const RESERVED_KEYWORDS = new Set(KEYWORD_PATTERNS.map((p) => p.keyword));
 const BARE_PATTERN = /^(.+)\s+(\S+)$/;
@@ -73,7 +73,7 @@ export class CommandParser {
         }
 
         const productQuery = normalizeText(rawProduct);
-        if (!productQuery) {
+        if (!productQuery || productQuery == "to") {
             throw new ParseError(DEFAULT_MESSAGE);
         }
 
